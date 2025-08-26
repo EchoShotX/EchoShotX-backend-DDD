@@ -14,6 +14,12 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(
+        name = "video",
+        indexes = {
+                @Index(name = "idx_video_member_id", columnList = "member_id")
+        }
+)
 public class Video extends BaseTimeEntity {
 
     @Id
