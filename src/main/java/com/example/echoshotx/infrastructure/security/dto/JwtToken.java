@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.security.dto;
+package com.example.echoshotx.infrastructure.security.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

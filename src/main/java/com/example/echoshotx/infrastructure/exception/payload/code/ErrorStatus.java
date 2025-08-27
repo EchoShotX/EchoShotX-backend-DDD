@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.exception.payload.code;
+package com.example.echoshotx.infrastructure.exception.payload.code;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

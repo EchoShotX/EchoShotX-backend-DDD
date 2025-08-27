@@ -1,4 +1,4 @@
-package com.example.demo.domain.auditing.entity;
+package com.example.echoshotx.domain.auditing.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;

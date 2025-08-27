@@ -1,12 +1,12 @@
-package com.example.demo.infrastructure.service;
+package com.example.echoshotx.infrastructure.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
-import com.example.demo.infrastructure.exception.object.domain.S3Handler;
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

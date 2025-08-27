@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.exception.object.general;
+package com.example.echoshotx.infrastructure.exception.object.general;
 
-import com.example.demo.infrastructure.exception.payload.code.BaseCode;
-import com.example.demo.infrastructure.exception.payload.code.Reason;
+import com.example.echoshotx.infrastructure.exception.payload.code.BaseCode;
+import com.example.echoshotx.infrastructure.exception.payload.code.Reason;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

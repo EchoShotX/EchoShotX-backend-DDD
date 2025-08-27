@@ -1,7 +1,7 @@
-package com.example.demo.domain.member.exception;
+package com.example.echoshotx.domain.member.exception;
 
-import com.example.demo.infrastructure.exception.object.general.GeneralException;
-import com.example.demo.infrastructure.exception.payload.code.BaseCode;
+import com.example.echoshotx.infrastructure.exception.object.general.GeneralException;
+import com.example.echoshotx.infrastructure.exception.payload.code.BaseCode;
 
 public class CreditHandler extends GeneralException {
     public CreditHandler(BaseCode code) {

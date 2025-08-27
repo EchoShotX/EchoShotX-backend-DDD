@@ -1,6 +1,6 @@
-package com.example.demo.infrastructure.exception.payload.security;
+package com.example.echoshotx.infrastructure.exception.payload.security;
 
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import org.springframework.security.core.AuthenticationException;
 
 public class JwtAuthenticationException extends AuthenticationException {

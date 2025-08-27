@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.annotation.usecase;
+package com.example.echoshotx.infrastructure.annotation.usecase;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.stereotype.Component;

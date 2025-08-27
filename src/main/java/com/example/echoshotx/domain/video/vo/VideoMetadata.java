@@ -1,4 +1,4 @@
-package com.example.demo.domain.video.vo;
+package com.example.echoshotx.domain.video.vo;
 
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;

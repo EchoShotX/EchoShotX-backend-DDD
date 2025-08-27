@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.security.aop;
+package com.example.echoshotx.infrastructure.security.aop;
 
 import io.swagger.v3.oas.annotations.Parameter;
 

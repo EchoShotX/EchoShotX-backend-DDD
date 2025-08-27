@@ -1,6 +1,6 @@
-package com.example.demo.domain.video.repository;
+package com.example.echoshotx.domain.video.repository;
 
-import com.example.demo.domain.video.entity.Video;
+import com.example.echoshotx.domain.video.entity.Video;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface VideoRepository extends JpaRepository<Video, Long> {

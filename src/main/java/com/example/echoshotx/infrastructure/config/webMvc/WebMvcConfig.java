@@ -1,8 +1,7 @@
-package com.example.demo.infrastructure.config.webMvc;
+package com.example.echoshotx.infrastructure.config.webMvc;
 
 
-import com.example.demo.infrastructure.security.resolver.CustomAuthenticationPrincipalArgumentResolver;
-import lombok.RequiredArgsConstructor;
+import com.example.echoshotx.infrastructure.security.resolver.CustomAuthenticationPrincipalArgumentResolver;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;

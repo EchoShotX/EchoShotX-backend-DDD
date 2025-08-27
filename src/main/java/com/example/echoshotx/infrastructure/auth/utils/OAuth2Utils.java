@@ -1,10 +1,10 @@
-package com.example.demo.infrastructure.auth.utils;
+package com.example.echoshotx.infrastructure.auth.utils;
 
-import com.example.demo.infrastructure.auth.domain.SocialType;
-import com.example.demo.infrastructure.auth.dto.GoogleUserInfo;
-import com.example.demo.infrastructure.auth.dto.KakaoUserInfo;
-import com.example.demo.infrastructure.auth.dto.NaverUserInfo;
-import com.example.demo.infrastructure.auth.dto.OAuth2UserInfo;
+import com.example.echoshotx.infrastructure.auth.domain.SocialType;
+import com.example.echoshotx.infrastructure.auth.dto.GoogleUserInfo;
+import com.example.echoshotx.infrastructure.auth.dto.KakaoUserInfo;
+import com.example.echoshotx.infrastructure.auth.dto.NaverUserInfo;
+import com.example.echoshotx.infrastructure.auth.dto.OAuth2UserInfo;
 
 import java.util.Map;
 

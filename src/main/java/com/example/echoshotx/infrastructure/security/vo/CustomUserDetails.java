@@ -1,6 +1,6 @@
-package com.example.demo.infrastructure.security.vo;
+package com.example.echoshotx.infrastructure.security.vo;
 
-import com.example.demo.domain.member.entity.Member;
+import com.example.echoshotx.domain.member.entity.Member;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 

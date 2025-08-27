@@ -1,7 +1,7 @@
-package com.example.demo.domain.member.entity;
+package com.example.echoshotx.domain.member.entity;
 
-import com.example.demo.domain.auditing.entity.BaseTimeEntity;
-import com.example.demo.domain.video.entity.ProcessingType;
+import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
+import com.example.echoshotx.domain.video.entity.ProcessingType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

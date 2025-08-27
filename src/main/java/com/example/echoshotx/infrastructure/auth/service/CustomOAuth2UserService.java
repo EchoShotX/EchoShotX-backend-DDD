@@ -1,13 +1,13 @@
-package com.example.demo.infrastructure.auth.service;
+package com.example.echoshotx.infrastructure.auth.service;
 
-import com.example.demo.domain.member.entity.Member;
-import com.example.demo.domain.member.entity.Role;
-import com.example.demo.domain.member.repository.MemberRepository;
-import com.example.demo.infrastructure.auth.domain.CustomOAuthUser;
-import com.example.demo.infrastructure.auth.domain.OAuth2Attributes;
-import com.example.demo.infrastructure.auth.domain.SocialType;
-import com.example.demo.infrastructure.auth.dto.OAuth2UserInfo;
-import com.example.demo.infrastructure.auth.utils.OAuth2Utils;
+import com.example.echoshotx.domain.member.entity.Member;
+import com.example.echoshotx.domain.member.entity.Role;
+import com.example.echoshotx.domain.member.repository.MemberRepository;
+import com.example.echoshotx.infrastructure.auth.domain.CustomOAuthUser;
+import com.example.echoshotx.infrastructure.auth.domain.OAuth2Attributes;
+import com.example.echoshotx.infrastructure.auth.domain.SocialType;
+import com.example.echoshotx.infrastructure.auth.dto.OAuth2UserInfo;
+import com.example.echoshotx.infrastructure.auth.utils.OAuth2Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

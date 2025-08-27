@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.config.spring;
+package com.example.echoshotx.infrastructure.config.spring;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;

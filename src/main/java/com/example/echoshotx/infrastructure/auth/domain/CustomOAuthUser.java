@@ -1,6 +1,6 @@
-package com.example.demo.infrastructure.auth.domain;
+package com.example.echoshotx.infrastructure.auth.domain;
 
-import com.example.demo.domain.member.entity.Member;
+import com.example.echoshotx.domain.member.entity.Member;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

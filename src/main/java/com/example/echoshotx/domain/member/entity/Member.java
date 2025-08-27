@@ -1,8 +1,8 @@
-package com.example.demo.domain.member.entity;
+package com.example.echoshotx.domain.member.entity;
 
-import com.example.demo.domain.auditing.entity.BaseTimeEntity;
-import com.example.demo.domain.member.exception.CreditErrorStatus;
-import com.example.demo.domain.member.exception.CreditHandler;
+import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
+import com.example.echoshotx.domain.member.exception.CreditErrorStatus;
+import com.example.echoshotx.domain.member.exception.CreditHandler;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -47,27 +47,41 @@ public class Member extends BaseTimeEntity {
         return this.role != Role.ADMIN;
     }
 
-    public boolean hasEnoughCredits(int requiredTokens) {
-        if(requiredTokens < 0) {
+    public boolean hasEnoughCredits(int requiredCredits) {
+        validateRequiredCredits(requiredCredits);
+        return this.currentCredits >= requiredCredits;
+    }
+
+    private void validateRequiredCredits(int requiredCredits) {
+        if(requiredCredits < 0) {
             throw new IllegalArgumentException("requiredTokens must be non-negative");
         }
-        return this.currentCredits >= requiredTokens;
     }
 
     public void useCredits(int amount) {
-        if(amount <= 0) {
-            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_VALID);
-        }
-        if(!hasEnoughCredits(amount)) {
-            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_ENOUGH);
-        }
+        validateUseCreditAmount(amount);
         this.currentCredits -= amount;
     }
 
-    public void addCredits(int amount) {
+    private void validateUseCreditAmount(int amount) {
+        checkAmountIsPositive(amount);
+        validateSufficientCredits(amount);
+    }
+
+    private void validateSufficientCredits(int amount) {
+        if(!hasEnoughCredits(amount)) {
+            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_ENOUGH);
+        }
+    }
+
+    private void checkAmountIsPositive(int amount) {
         if(amount <= 0) {
             throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_VALID);
         }
+    }
+
+    public void addCredits(int amount) {
+        checkAmountIsPositive(amount);
         this.currentCredits += amount;
     }
 

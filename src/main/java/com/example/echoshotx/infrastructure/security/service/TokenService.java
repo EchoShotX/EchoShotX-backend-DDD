@@ -1,11 +1,11 @@
-package com.example.demo.infrastructure.security.service;
+package com.example.echoshotx.infrastructure.security.service;
 
-import com.example.demo.domain.member.adaptor.MemberAdaptor;
-import com.example.demo.infrastructure.exception.object.general.GeneralException;
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
-import com.example.demo.infrastructure.security.dto.JwtToken;
-import com.example.demo.infrastructure.security.vo.CustomUserDetails;
-import com.example.demo.infrastructure.service.RedisService;
+import com.example.echoshotx.domain.member.adaptor.MemberAdaptor;
+import com.example.echoshotx.infrastructure.exception.object.general.GeneralException;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.security.dto.JwtToken;
+import com.example.echoshotx.infrastructure.security.vo.CustomUserDetails;
+import com.example.echoshotx.infrastructure.service.RedisService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

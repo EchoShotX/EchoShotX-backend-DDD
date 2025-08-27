@@ -1,7 +1,7 @@
-package com.example.demo.domain.member.exception;
+package com.example.echoshotx.domain.member.exception;
 
-import com.example.demo.infrastructure.exception.payload.code.BaseCode;
-import com.example.demo.infrastructure.exception.payload.code.Reason;
+import com.example.echoshotx.infrastructure.exception.payload.code.BaseCode;
+import com.example.echoshotx.infrastructure.exception.payload.code.Reason;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;

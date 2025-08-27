@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.auth.handler;
+package com.example.echoshotx.infrastructure.auth.handler;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

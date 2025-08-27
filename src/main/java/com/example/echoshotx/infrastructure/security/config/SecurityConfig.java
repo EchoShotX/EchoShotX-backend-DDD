@@ -1,12 +1,12 @@
-package com.example.demo.infrastructure.security.config;
+package com.example.echoshotx.infrastructure.security.config;
 
-import com.example.demo.infrastructure.auth.handler.CustomOAuth2LoginFailureHandler;
-import com.example.demo.infrastructure.auth.handler.CustomOAuth2LoginSuccessHandler;
-import com.example.demo.infrastructure.auth.service.CustomOAuth2UserService;
-import com.example.demo.infrastructure.security.exception.JwtAccessDeniedHandler;
-import com.example.demo.infrastructure.security.exception.JwtAuthenticationEntryPoint;
-import com.example.demo.infrastructure.security.filter.JwtAuthenticationFilter;
-import com.example.demo.infrastructure.security.filter.JwtExceptionFilter;
+import com.example.echoshotx.infrastructure.auth.handler.CustomOAuth2LoginFailureHandler;
+import com.example.echoshotx.infrastructure.auth.handler.CustomOAuth2LoginSuccessHandler;
+import com.example.echoshotx.infrastructure.auth.service.CustomOAuth2UserService;
+import com.example.echoshotx.infrastructure.security.exception.JwtAccessDeniedHandler;
+import com.example.echoshotx.infrastructure.security.exception.JwtAuthenticationEntryPoint;
+import com.example.echoshotx.infrastructure.security.filter.JwtAuthenticationFilter;
+import com.example.echoshotx.infrastructure.security.filter.JwtExceptionFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

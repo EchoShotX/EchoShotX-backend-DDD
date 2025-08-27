@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.config.swagger;
+package com.example.echoshotx.infrastructure.config.swagger;
 
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;

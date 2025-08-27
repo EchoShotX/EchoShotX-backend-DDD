@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.config.redis;
+package com.example.echoshotx.infrastructure.config.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;

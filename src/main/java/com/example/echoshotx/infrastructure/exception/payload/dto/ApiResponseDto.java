@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.exception.payload.dto;
+package com.example.echoshotx.infrastructure.exception.payload.dto;
 
-import com.example.demo.infrastructure.exception.payload.code.Reason;
-import com.example.demo.infrastructure.exception.payload.code.SuccessStatus;
+import com.example.echoshotx.infrastructure.exception.payload.code.Reason;
+import com.example.echoshotx.infrastructure.exception.payload.code.SuccessStatus;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

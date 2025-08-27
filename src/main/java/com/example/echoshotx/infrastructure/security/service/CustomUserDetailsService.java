@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.security.service;
+package com.example.echoshotx.infrastructure.security.service;
 
-import com.example.demo.domain.member.adaptor.MemberAdaptor;
-import com.example.demo.infrastructure.security.vo.CustomUserDetails;
+import com.example.echoshotx.domain.member.adaptor.MemberAdaptor;
+import com.example.echoshotx.infrastructure.security.vo.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

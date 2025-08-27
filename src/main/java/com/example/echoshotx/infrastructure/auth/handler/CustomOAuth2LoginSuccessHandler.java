@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.auth.handler;
+package com.example.echoshotx.infrastructure.auth.handler;
 
-import com.example.demo.infrastructure.security.dto.JwtToken;
-import com.example.demo.infrastructure.security.service.TokenService;
+import com.example.echoshotx.infrastructure.security.dto.JwtToken;
+import com.example.echoshotx.infrastructure.security.service.TokenService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

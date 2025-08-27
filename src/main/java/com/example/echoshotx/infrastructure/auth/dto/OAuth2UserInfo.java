@@ -1,5 +1,4 @@
-package com.example.demo.infrastructure.auth.dto;
-import lombok.RequiredArgsConstructor;
+package com.example.echoshotx.infrastructure.auth.dto;
 
 import java.util.Map;
 

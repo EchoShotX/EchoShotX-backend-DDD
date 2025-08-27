@@ -1,4 +1,4 @@
-package com.example.demo.domain.video.entity;
+package com.example.echoshotx.domain.video.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

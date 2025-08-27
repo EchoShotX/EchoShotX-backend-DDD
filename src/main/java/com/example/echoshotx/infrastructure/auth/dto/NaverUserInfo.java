@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.auth.dto;
+package com.example.echoshotx.infrastructure.auth.dto;
 
 import java.util.Map;
 

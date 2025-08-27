@@ -1,4 +1,4 @@
-package com.example.demo.infrastructure.auth.domain;
+package com.example.echoshotx.infrastructure.auth.domain;
 
 public enum SocialType {
     NAVER, GOOGLE, KAKAO

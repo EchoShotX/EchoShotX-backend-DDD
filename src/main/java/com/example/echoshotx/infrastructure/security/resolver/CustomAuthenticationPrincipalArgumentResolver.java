@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.security.resolver;
+package com.example.echoshotx.infrastructure.security.resolver;
 
-import com.example.demo.domain.member.adaptor.MemberAdaptor;
-import com.example.demo.infrastructure.security.aop.CurrentMember;
+import com.example.echoshotx.domain.member.adaptor.MemberAdaptor;
+import com.example.echoshotx.infrastructure.security.aop.CurrentMember;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.MethodParameter;

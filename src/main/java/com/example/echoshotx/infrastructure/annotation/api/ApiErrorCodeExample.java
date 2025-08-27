@@ -1,6 +1,6 @@
-package com.example.demo.infrastructure.annotation.api;
+package com.example.echoshotx.infrastructure.annotation.api;
 
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

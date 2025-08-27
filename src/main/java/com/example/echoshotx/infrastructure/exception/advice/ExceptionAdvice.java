@@ -1,9 +1,9 @@
-package com.example.demo.infrastructure.exception.advice;
+package com.example.echoshotx.infrastructure.exception.advice;
 
-import com.example.demo.infrastructure.exception.object.general.GeneralException;
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
-import com.example.demo.infrastructure.exception.payload.code.Reason;
-import com.example.demo.infrastructure.exception.payload.dto.ApiResponseDto;
+import com.example.echoshotx.infrastructure.exception.object.general.GeneralException;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.code.Reason;
+import com.example.echoshotx.infrastructure.exception.payload.dto.ApiResponseDto;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 

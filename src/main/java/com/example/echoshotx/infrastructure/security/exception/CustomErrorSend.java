@@ -1,7 +1,7 @@
-package com.example.demo.infrastructure.security.exception;
+package com.example.echoshotx.infrastructure.security.exception;
 
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
-import com.example.demo.infrastructure.exception.payload.dto.ApiResponseDto;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.dto.ApiResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 

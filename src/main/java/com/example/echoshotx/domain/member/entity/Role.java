@@ -1,4 +1,4 @@
-package com.example.demo.domain.member.entity;
+package com.example.echoshotx.domain.member.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

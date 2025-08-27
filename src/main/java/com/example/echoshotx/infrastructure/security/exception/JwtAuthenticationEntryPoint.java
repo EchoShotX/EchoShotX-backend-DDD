@@ -1,6 +1,6 @@
-package com.example.demo.infrastructure.security.exception;
+package com.example.echoshotx.infrastructure.security.exception;
 
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

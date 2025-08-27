@@ -1,8 +1,8 @@
-package com.example.demo.infrastructure.security.filter;
+package com.example.echoshotx.infrastructure.security.filter;
 
-import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
-import com.example.demo.infrastructure.exception.payload.security.JwtAuthenticationException;
-import com.example.demo.infrastructure.security.exception.CustomErrorSend;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
+import com.example.echoshotx.infrastructure.exception.payload.security.JwtAuthenticationException;
+import com.example.echoshotx.infrastructure.security.exception.CustomErrorSend;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

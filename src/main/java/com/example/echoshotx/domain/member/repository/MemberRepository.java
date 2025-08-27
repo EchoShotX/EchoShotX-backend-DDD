@@ -1,6 +1,6 @@
-package com.example.demo.domain.member.repository;
+package com.example.echoshotx.domain.member.repository;
 
-import com.example.demo.domain.member.entity.Member;
+import com.example.echoshotx.domain.member.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
