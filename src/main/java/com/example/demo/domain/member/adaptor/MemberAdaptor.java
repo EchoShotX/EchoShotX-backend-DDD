@@ -4,12 +4,10 @@ package com.example.demo.domain.member.adaptor;
 import com.example.demo.domain.member.entity.Member;
 import com.example.demo.domain.member.repository.MemberRepository;
 import com.example.demo.infrastructure.annotation.adaptor.Adaptor;
-import com.example.demo.infrastructure.exception.object.domain.MemberHandler;
+import com.example.demo.domain.member.exception.MemberHandler;
 import com.example.demo.infrastructure.exception.payload.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Adaptor
 @Transactional(readOnly = true)

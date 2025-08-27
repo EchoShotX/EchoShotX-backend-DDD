@@ -1,11 +1,10 @@
 package com.example.demo.domain.member.entity;
 
 import com.example.demo.domain.auditing.entity.BaseTimeEntity;
+import com.example.demo.domain.member.exception.CreditErrorStatus;
+import com.example.demo.domain.member.exception.CreditHandler;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 @Getter
@@ -38,12 +37,38 @@ public class Member extends BaseTimeEntity {
 
     private String email;
 
-    private int point;
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer currentCredits = 0;
 
 
     //business
     private boolean isNotAdmin() {
         return this.role != Role.ADMIN;
+    }
+
+    public boolean hasEnoughCredits(int requiredTokens) {
+        if(requiredTokens < 0) {
+            throw new IllegalArgumentException("requiredTokens must be non-negative");
+        }
+        return this.currentCredits >= requiredTokens;
+    }
+
+    public void useCredits(int amount) {
+        if(amount <= 0) {
+            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_VALID);
+        }
+        if(!hasEnoughCredits(amount)) {
+            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_ENOUGH);
+        }
+        this.currentCredits -= amount;
+    }
+
+    public void addCredits(int amount) {
+        if(amount <= 0) {
+            throw new CreditHandler(CreditErrorStatus.CREDIT_NOT_VALID);
+        }
+        this.currentCredits += amount;
     }
 
 }
