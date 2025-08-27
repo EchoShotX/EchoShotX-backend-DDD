@@ -2,6 +2,7 @@ package com.example.echoshotx.domain.member.adaptor;
 
 
 import com.example.echoshotx.domain.member.entity.Member;
+import com.example.echoshotx.domain.member.exception.MemberErrorStatus;
 import com.example.echoshotx.domain.member.repository.MemberRepository;
 import com.example.echoshotx.infrastructure.annotation.adaptor.Adaptor;
 import com.example.echoshotx.domain.member.exception.MemberHandler;
@@ -18,13 +19,13 @@ public class MemberAdaptor {
 
     public Member queryById(Long memberId) {
         return repository.findById(memberId).orElseThrow(
-                () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
+                () -> new MemberHandler(MemberErrorStatus.MEMBER_NOT_FOUND)
         );
     }
 
     public Member queryByUsername(String username) {
         return repository.findByUsername(username).orElseThrow(
-                () -> new MemberHandler(ErrorStatus.MEMBER_NOT_FOUND)
+                () -> new MemberHandler(MemberErrorStatus.MEMBER_NOT_FOUND)
         );
     }
 }
