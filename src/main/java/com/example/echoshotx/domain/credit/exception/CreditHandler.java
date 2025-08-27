@@ -1,4 +1,4 @@
-package com.example.echoshotx.domain.member.exception;
+package com.example.echoshotx.domain.credit.exception;
 
 import com.example.echoshotx.infrastructure.exception.object.general.GeneralException;
 import com.example.echoshotx.infrastructure.exception.payload.code.BaseCode;

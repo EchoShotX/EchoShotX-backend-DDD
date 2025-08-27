@@ -1,8 +1,8 @@
 package com.example.echoshotx.domain.member.entity;
 
 import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
-import com.example.echoshotx.domain.member.exception.CreditErrorStatus;
-import com.example.echoshotx.domain.member.exception.CreditHandler;
+import com.example.echoshotx.domain.credit.exception.CreditErrorStatus;
+import com.example.echoshotx.domain.credit.exception.CreditHandler;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;

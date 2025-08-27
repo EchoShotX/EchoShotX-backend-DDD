@@ -10,7 +10,6 @@ public enum ProcessingType {
     AI_UPSCALING("AI 업스케일링", 3); // add strategy pattern later
 
     private final String description;
-    private final int tokenCostPerSecond;
-
+    private final int creditCostPerSecond;
 
 }
