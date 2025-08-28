@@ -36,4 +36,5 @@ public enum MemberErrorStatus implements BaseCode {
                 .httpStatus(httpStatus)
                 .build();
     }
+
 }

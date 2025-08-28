@@ -3,6 +3,7 @@ package com.example.echoshotx.infrastructure.service;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
@@ -16,10 +17,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.InputStream;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -41,9 +40,29 @@ public class AwsS3Service {
         amazonS3Client.deleteObject(new DeleteObjectRequest(bucket, s3Key));
     }
 
+    public String uploadVideo(MultipartFile video, String filePath) {
+        validateVideoSize(video);
+        validateVideoFileExtension(video.getOriginalFilename());
+        String fileName = createVideoFileName(video);
+        String s3Key = filePath + fileName;
+        try {
+            InputStream inputStream = video.getInputStream();
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentLength(video.getSize());
+            metadata.setContentType(video.getContentType());
+
+            amazonS3Client.putObject(new PutObjectRequest(bucket, s3Key, inputStream, metadata).withCannedAcl(
+                    CannedAccessControlList.Private));
+        } catch (IOException e) {
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+
+        return fileName;
+    }
+
     public String uploadImage(MultipartFile image, String filePath) {
-        validateFileExtension(image.getOriginalFilename());
-        String fileName = createFileName(image);
+        validateImageFileExtension(image.getOriginalFilename());
+        String fileName = createImageFileName(image);
         String s3Key = filePath + fileName;
         try {
             File uploadFile = uploadLocalFile(image, fileName, filePath).orElseThrow(
@@ -63,11 +82,29 @@ public class AwsS3Service {
         return String.format(S3_AWS_STATIC_PATH, bucket, staticRegion) + s3Key;
     }
 
-    private String createFileName(MultipartFile multipartFile) {
+    private String createImageFileName(MultipartFile multipartFile) {
         return UUID.randomUUID().toString().substring(0, 10) + multipartFile.getOriginalFilename();
     }
 
-    private void validateFileExtension(String fileName) {
+    private String createVideoFileName(MultipartFile multipartFile) {
+        return UUID.randomUUID().toString().substring(0, 10) + multipartFile.getOriginalFilename();
+    }
+
+    private void validateVideoFileExtension(String filename) {
+        int lastDotIndex = filename.lastIndexOf(".");
+        if (lastDotIndex == -1) {
+            throw new S3Handler(ErrorStatus.FILE_EXTENSION_NOT_FOUND);
+        }
+
+        String extention = filename.substring(lastDotIndex + 1).toLowerCase();
+        List<String> allowedExtentionList = Arrays.asList("mp4", "avi", "mov", "wmv", "flv", "mkv");
+
+        if (!allowedExtentionList.contains(extention)) {
+            throw new S3Handler(ErrorStatus.FILE_INVALID_EXTENSION);
+        }
+    }
+
+    private void validateImageFileExtension(String fileName) {
         int lastDotIndex = fileName.lastIndexOf(".");
         if (lastDotIndex == -1) {
             throw new S3Handler(ErrorStatus.FILE_EXTENSION_NOT_FOUND);
@@ -80,6 +117,14 @@ public class AwsS3Service {
             throw new S3Handler(ErrorStatus.FILE_INVALID_EXTENSION);
         }
     }
+
+    private void validateVideoSize(MultipartFile video) {
+        long maxSizeBytes = 500 * 1024 * 1024; // 500MB
+        if (video.getSize() > maxSizeBytes) {
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+    }
+
 
     private Optional<File> uploadLocalFile(MultipartFile multipartFile, String fileName, String filePath) throws IOException {
         String localPathName = LOCAL_FILE_PATH + filePath + fileName;
