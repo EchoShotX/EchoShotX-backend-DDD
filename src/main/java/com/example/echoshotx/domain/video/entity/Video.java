@@ -2,12 +2,15 @@ package com.example.echoshotx.domain.video.entity;
 
 import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
 import com.example.echoshotx.domain.video.vo.VideoMetadata;
+import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
+import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
+import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Entity
@@ -53,4 +56,28 @@ public class Video extends BaseTimeEntity {
 
     @Embedded
     private VideoMetadata metadata;
+
+    public static Video create(
+            Long memberId,
+            MultipartFile file,
+            String s3Key,
+            ProcessingType processingType,
+            VideoMetadata metadata
+    ) {
+        return Video.builder()
+                .memberId(memberId)
+                .originalFileName(file.getOriginalFilename())
+                .s3OriginalKey(s3Key)
+                .fileSizeBytes(file.getSize())
+                .status(VideoStatus.UPLOADED)
+                .processingType(processingType)
+                .metadata(metadata)
+                .build();
+    }
+
+    public void validateMember(Long memberId) {
+        if (!this.memberId.equals(memberId)) {
+            throw new IllegalArgumentException("접근 권한이 없습니다.");
+        }
+    }
 }
