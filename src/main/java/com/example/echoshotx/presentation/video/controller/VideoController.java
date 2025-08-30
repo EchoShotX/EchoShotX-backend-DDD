@@ -3,13 +3,11 @@ package com.example.echoshotx.presentation.video.controller;
 import com.example.echoshotx.application.video.usecase.GetVideoUseCase;
 import com.example.echoshotx.application.video.usecase.GetProcessedVideosUseCase;
 import com.example.echoshotx.application.video.usecase.UploadVideoUseCase;
-import com.example.echoshotx.application.video.usecase.GetVideoStreamUseCase;
 import com.example.echoshotx.domain.member.entity.Member;
 import com.example.echoshotx.domain.video.entity.ProcessingType;
 import com.example.echoshotx.presentation.video.dto.response.VideoUploadResponse;
 import com.example.echoshotx.presentation.video.dto.response.VideoDetailResponse;
 import com.example.echoshotx.presentation.video.dto.response.VideoListResponse;
-import com.example.echoshotx.presentation.video.dto.response.VideoStreamResponse;
 import com.example.echoshotx.infrastructure.exception.payload.dto.ApiResponseDto;
 import com.example.echoshotx.infrastructure.security.aop.CurrentMember;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,7 +30,6 @@ public class VideoController {
     private final UploadVideoUseCase uploadVideoUseCase;
     private final GetVideoUseCase getVideoUseCase;
     private final GetProcessedVideosUseCase getProcessedVideosUseCase;
-    private final GetVideoStreamUseCase getVideoStreamUseCase;
 
     @Operation(summary = "영상 업로드", description = "영상 파일을 업로드하고 DB에 저장합니다")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -65,19 +62,5 @@ public class VideoController {
         List<VideoListResponse> response = getProcessedVideosUseCase.execute(member);
         return ApiResponseDto.onSuccess(response);
     }
-
-    @Operation(summary = "영상 스트리밍 URL 생성", 
-               description = "영상 ID로 스트리밍 가능한 Pre-signed URL을 생성합니다")
-    @GetMapping("/{videoId}/stream")
-    public ApiResponseDto<VideoStreamResponse> getVideoStream(
-            @PathVariable Long videoId,
-            @CurrentMember Member member) {
-        
-        VideoStreamResponse response = getVideoStreamUseCase.execute(videoId, member);
-        return ApiResponseDto.onSuccess(response);
-    }
-
-    // Note: 개별 썸네일/다운로드 API는 제거됨
-    // 모든 URL 정보는 GET /api/videos/processed에서 한 번에 제공됨
 
 }

@@ -6,6 +6,7 @@ import com.example.echoshotx.domain.video.entity.VideoStatus;
 import com.example.echoshotx.domain.video.exception.VideoErrorStatus;
 import com.example.echoshotx.domain.video.exception.VideoHandler;
 import com.example.echoshotx.domain.video.repository.VideoRepository;
+import com.example.echoshotx.domain.video.validator.VideoValidator;
 import com.example.echoshotx.domain.video.vo.VideoMetadata;
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
@@ -26,6 +27,7 @@ public class VideoService {
 
     private final VideoRepository videoRepository;
     private final AwsS3Service awsS3Service;
+    private final VideoValidator videoValidator;
 
     private static final String VIDEO_UPLOAD_PATH = "videos/";
     //todo 상세 경로 설정
@@ -36,7 +38,9 @@ public class VideoService {
     // todo s3, db 정합성 해결
     @Transactional
     public Video uploadVideo(MultipartFile file, Long memberId, ProcessingType processingType) {
-        validateUploadFile(file);
+        // VideoValidator를 사용하여 파일 검증
+        videoValidator.validateVideoFile(file);
+        
         // 1. S3에 파일 업로드
         String s3FileName = awsS3Service.uploadVideo(file, VIDEO_UPLOAD_PATH);
         String s3Key = VIDEO_UPLOAD_PATH + s3FileName;
@@ -65,17 +69,5 @@ public class VideoService {
         );
     }
 
-    /**
-     * 업로드 파일 유효성 검증
-     */
-    private void validateUploadFile(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_NOT_FOUND);
-        }
 
-        String originalFilename = file.getOriginalFilename();
-        if (originalFilename == null || originalFilename.trim().isEmpty()) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_FILE_NAME);
-        }
-    }
 }
