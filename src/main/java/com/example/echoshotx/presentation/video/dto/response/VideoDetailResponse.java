@@ -25,6 +25,12 @@ public class VideoDetailResponse {
     private LocalDateTime uploadedAt;
     private LocalDateTime updatedAt;
     
+    // 스트리밍 및 다운로드를 위한 URL들
+    private String streamingUrl;        // 스트리밍용 Pre-signed URL
+    private String downloadUrl;         // 다운로드용 Pre-signed URL
+    private String thumbnailUrl;        // 썸네일용 Pre-signed URL
+    private LocalDateTime urlExpiresAt; // URL 만료 시간
+    
     public static VideoDetailResponse from(Video video) {
         return VideoDetailResponse.builder()
                 .videoId(video.getId())
@@ -38,6 +44,7 @@ public class VideoDetailResponse {
                 .metadata(video.getMetadata())
                 .uploadedAt(video.getCreatedDate())
                 .updatedAt(video.getLastModifiedDate())
+                // Note: URL들은 UseCase에서 별도로 생성하여 설정해야 함
                 .build();
     }
 }

@@ -3,8 +3,10 @@ package com.example.echoshotx.infrastructure.service;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.HttpMethod;
 
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
@@ -18,6 +20,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.*;
 
 @Slf4j
@@ -35,6 +38,11 @@ public class AwsS3Service {
 
     private static final String S3_AWS_STATIC_PATH = "https://%s.s3.%s.amazonaws.com/";
     private static final String LOCAL_FILE_PATH = "src/main/resources/dump/";
+    
+    // Pre-signed URL 만료 시간 설정 (초 단위)
+    private static final int STREAMING_URL_EXPIRATION = 3600; // 1시간
+    private static final int DOWNLOAD_URL_EXPIRATION = 1800;  // 30분
+    private static final int THUMBNAIL_URL_EXPIRATION = 86400; // 24시간
 
     public void deleteFile(String s3Key) {
         amazonS3Client.deleteObject(new DeleteObjectRequest(bucket, s3Key));
@@ -155,5 +163,90 @@ public class AwsS3Service {
             return;
         }
         log.info("File delete fail");
+    }
+
+    /**
+     * 영상 스트리밍을 위한 Pre-signed URL 생성
+     * @param s3Key S3 객체 키
+     * @return 스트리밍 가능한 Pre-signed URL
+     */
+    public String generateStreamingUrl(String s3Key) {
+        try {
+            Date expiration = new Date();
+            expiration.setTime(expiration.getTime() + STREAMING_URL_EXPIRATION * 1000L);
+            
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                    .withMethod(HttpMethod.GET)
+                    .withExpiration(expiration);
+            
+            URL url = amazonS3Client.generatePresignedUrl(request);
+            log.info("Generated streaming URL for key: {}, expires: {}", s3Key, expiration);
+            
+            return url.toString();
+        } catch (Exception e) {
+            log.error("Failed to generate streaming URL for key: {}", s3Key, e);
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
+     * 영상 다운로드를 위한 Pre-signed URL 생성
+     * @param s3Key S3 객체 키
+     * @return 다운로드 가능한 Pre-signed URL
+     */
+    public String generateDownloadUrl(String s3Key) {
+        try {
+            Date expiration = new Date();
+            expiration.setTime(expiration.getTime() + DOWNLOAD_URL_EXPIRATION * 1000L);
+            
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                    .withMethod(HttpMethod.GET)
+                    .withExpiration(expiration);
+            
+            URL url = amazonS3Client.generatePresignedUrl(request);
+            log.info("Generated download URL for key: {}, expires: {}", s3Key, expiration);
+            
+            return url.toString();
+        } catch (Exception e) {
+            log.error("Failed to generate download URL for key: {}", s3Key, e);
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
+     * 썸네일 이미지를 위한 Pre-signed URL 생성
+     * @param s3Key S3 객체 키
+     * @return 썸네일 표시용 Pre-signed URL
+     */
+    public String generateThumbnailUrl(String s3Key) {
+        try {
+            Date expiration = new Date();
+            expiration.setTime(expiration.getTime() + THUMBNAIL_URL_EXPIRATION * 1000L);
+            
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                    .withMethod(HttpMethod.GET)
+                    .withExpiration(expiration);
+            
+            URL url = amazonS3Client.generatePresignedUrl(request);
+            
+            return url.toString();
+        } catch (Exception e) {
+            log.error("Failed to generate thumbnail URL for key: {}", s3Key, e);
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
+     * S3 객체 존재 여부 확인
+     * @param s3Key S3 객체 키
+     * @return 존재 여부
+     */
+    public boolean doesObjectExist(String s3Key) {
+        try {
+            return amazonS3Client.doesObjectExist(bucket, s3Key);
+        } catch (Exception e) {
+            log.error("Failed to check object existence for key: {}", s3Key, e);
+            return false;
+        }
     }
 }

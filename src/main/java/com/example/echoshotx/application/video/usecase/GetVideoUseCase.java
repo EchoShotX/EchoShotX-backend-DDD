@@ -16,9 +16,17 @@ public class GetVideoUseCase {
     private final VideoAdaptor videoAdaptor;
 
     public VideoDetailResponse execute(Long videoId, Member member) {
+        log.info("Fetching video details for video: {}, user: {}", videoId, member.getId());
+        
         Video video = videoAdaptor.queryById(videoId);
         video.validateMember(member.getId());
-        return VideoDetailResponse.from(video);
+        
+        // 기본 Response 생성
+        VideoDetailResponse response = VideoDetailResponse.from(video);
+        
+        // TODO: URL 정보 추가 로직 구현 필요
+        // 현재는 기본 정보만 반환
+        
+        return response;
     }
-
 }
