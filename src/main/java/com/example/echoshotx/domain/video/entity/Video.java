@@ -5,8 +5,7 @@ import com.example.echoshotx.domain.video.exception.VideoErrorStatus;
 import com.example.echoshotx.domain.video.exception.VideoHandler;
 import com.example.echoshotx.domain.video.vo.VideoMetadata;
 import com.example.echoshotx.domain.video.vo.VideoUrls;
-import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
-import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -235,6 +234,11 @@ public class Video extends BaseTimeEntity {
                     throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
                 }
                 break;
+            case ARCHIVED:
+                if (newStatus != VideoStatus.PROCESSING) {
+                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
+                }
+                break;
         }
     }
 
@@ -296,6 +300,99 @@ public class Video extends BaseTimeEntity {
      */
     public boolean canReprocess() {
         return this.status == VideoStatus.FAILED || this.status == VideoStatus.UPLOADED;
+    }
+
+    // ========================================
+    // 테스트 전용 팩토리 메서드들
+    // ========================================
+
+    /**
+     * 테스트용 Video 인스턴스를 생성합니다
+     * 
+     * ⚠️  주의: 이 메서드는 테스트 목적으로만 사용해야 합니다
+     * - 도메인 규칙 검증을 우회합니다
+     * - 운영 코드에서는 절대 사용하지 마세요
+     * 
+     * @param id 영상 ID
+     * @param memberId 회원 ID
+     * @param fileName 파일명
+     * @param status 영상 상태
+     * @return 테스트용 Video 인스턴스
+     */
+    public static Video createForTest(Long id, Long memberId, String fileName, VideoStatus status) {
+        return Video.builder()
+                .id(id)
+                .memberId(memberId)
+                .originalFileName(fileName)
+                .s3OriginalKey("originals/" + fileName)
+                .s3ProcessedKey(status == VideoStatus.PROCESSED ? "processed/" + fileName : null)
+                .s3ThumbnailKey(status == VideoStatus.PROCESSED ? "thumbnails/thumb_" + id + ".jpg" : null)
+                .fileSizeBytes(1024L * id)
+                .status(status)
+                .processingType(ProcessingType.BASIC_ENHANCEMENT)
+                .metadata(VideoMetadata.createForTest())
+                .urls(VideoUrls.empty())
+                .build();
+    }
+
+    /**
+     * 테스트용 상세 Video 인스턴스를 생성합니다 (메타데이터 포함)
+     * 
+     * @param id 영상 ID
+     * @param memberId 회원 ID
+     * @param fileName 파일명
+     * @param status 영상 상태
+     * @param durationSeconds 영상 길이 (초)
+     * @param width 가로 해상도
+     * @param height 세로 해상도
+     * @return 테스트용 Video 인스턴스
+     */
+    public static Video createDetailedForTest(Long id, Long memberId, String fileName, VideoStatus status,
+                                            double durationSeconds, int width, int height) {
+        return Video.builder()
+                .id(id)
+                .memberId(memberId)
+                .originalFileName(fileName)
+                .s3OriginalKey("originals/" + fileName)
+                .s3ProcessedKey(status == VideoStatus.PROCESSED ? "processed/" + fileName : null)
+                .s3ThumbnailKey(status == VideoStatus.PROCESSED ? "thumbnails/thumb_" + id + ".jpg" : null)
+                .fileSizeBytes(calculateFileSize(durationSeconds, width, height))
+                .status(status)
+                .processingType(ProcessingType.BASIC_ENHANCEMENT)
+                .metadata(VideoMetadata.createDetailedForTest(durationSeconds, width, height, "h264", 5000000L, 30.0))
+                .urls(VideoUrls.empty())
+                .build();
+    }
+
+    /**
+     * 테스트용 최소한의 Video 인스턴스를 생성합니다 (업로드 직후 상태)
+     * 
+     * @param memberId 회원 ID
+     * @param fileName 파일명
+     * @param fileSize 파일 크기
+     * @return 테스트용 Video 인스턴스
+     */
+    public static Video createUploadedForTest(Long memberId, String fileName, long fileSize) {
+        return Video.builder()
+                .memberId(memberId)
+                .originalFileName(fileName)
+                .s3OriginalKey("originals/" + fileName)
+                .s3ProcessedKey(null)
+                .s3ThumbnailKey(null)
+                .fileSizeBytes(fileSize)
+                .status(VideoStatus.UPLOADED)
+                .processingType(ProcessingType.BASIC_ENHANCEMENT)
+                .metadata(VideoMetadata.createEmptyForTest())
+                .urls(VideoUrls.empty())
+                .build();
+    }
+
+    /**
+     * 테스트용 파일 크기 계산 (추정값)
+     */
+    private static long calculateFileSize(double durationSeconds, int width, int height) {
+        // 간단한 추정: duration * resolution * compression_factor
+        return (long) (durationSeconds * width * height * 0.1);
     }
 
 }
