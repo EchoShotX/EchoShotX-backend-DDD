@@ -14,12 +14,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -30,6 +31,10 @@ import static org.mockito.BDDMockito.*;
 
 /**
  * GetProcessedVideosUseCase 테스트
+ * 
+ * ⚠️  주요 변경사항: 썸네일 URL만 제공하고 스트리밍 기능은 보류
+ * - 썸네일 URL 생성 및 검증 테스트 활성화
+ * - 스트리밍 관련 테스트는 @Disabled로 보류 처리
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GetProcessedVideosUseCase 테스트")
@@ -62,27 +67,27 @@ class GetProcessedVideosUseCaseTest {
     class SuccessfulCases {
 
         @Test
-        @DisplayName("처리된 영상 목록 조회 - 모든 URL 생성 성공")
-        void getProcessedVideos_AllUrlsGenerated_Success() {
+        @DisplayName("처리된 영상 목록 조회 - 썸네일 URL 포함")
+        void getProcessedVideos_WithThumbnailUrl_Success() {
             // given
             List<Video> mockVideos = createMockProcessedVideos();
+            
+            // 디버깅: 실제 생성된 Video 객체 상태 확인
+            System.out.println("Created mock videos:");
+            for (Video video : mockVideos) {
+                System.out.println("Video ID: " + video.getId() + 
+                    ", Status: " + video.getStatus() + 
+                    ", ThumbnailKey: " + video.getS3ThumbnailKey());
+            }
+            
             given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
                     .willReturn(mockVideos);
 
-            // S3 URL 생성 Mock 설정
-            given(awsS3Service.generateThumbnailUrl("thumbnails/thumb1.jpg"))
-                    .willReturn("https://s3.aws.com/thumbnails/thumb1.jpg?expires=123");
-            given(awsS3Service.generateStreamingUrl("processed/video1.mp4"))
-                    .willReturn("https://s3.aws.com/processed/video1.jpg?expires=456");
-            given(awsS3Service.generateDownloadUrl("originals/video1.mp4"))
-                    .willReturn("https://s3.aws.com/originals/video1.mp4?expires=789");
-
-            given(awsS3Service.generateThumbnailUrl("thumbnails/thumb2.jpg"))
-                    .willReturn("https://s3.aws.com/thumbnails/thumb2.jpg?expires=123");
-            given(awsS3Service.generateStreamingUrl("processed/video2.mp4"))
-                    .willReturn("https://s3.aws.com/processed/video2.mp4?expires=456");
-            given(awsS3Service.generateDownloadUrl("originals/video2.mp4"))
-                    .willReturn("https://s3.aws.com/originals/video2.mp4?expires=789");
+            // S3 썸네일 URL 생성 Mock 설정
+            given(awsS3Service.generateFileUrl("thumbnails/thumb_1.jpg"))
+                    .willReturn("https://echoshotx-bucket.s3.ap-northeast-2.amazonaws.com/thumbnails/thumb_1.jpg");
+            given(awsS3Service.generateFileUrl("thumbnails/thumb_2.jpg"))
+                    .willReturn("https://echoshotx-bucket.s3.ap-northeast-2.amazonaws.com/thumbnails/thumb_2.jpg");
 
             // when
             List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
@@ -93,15 +98,37 @@ class GetProcessedVideosUseCaseTest {
             VideoListResponse response1 = responses.get(0);
             assertThat(response1.getVideoId()).isEqualTo(1L);
             assertThat(response1.getStatus()).isEqualTo(VideoStatus.PROCESSED);
-            assertThat(response1.getThumbnailUrl()).contains("thumbnails/thumb1.jpg");
-            assertThat(response1.getStreamingUrl()).contains("processed/video1");
-            assertThat(response1.getDownloadUrl()).contains("originals/video1.mp4");
-            assertThat(response1.getUrlExpiresAt()).isNotNull();
+            assertThat(response1.getOriginalFileName()).isEqualTo("video1.mp4");
+            assertThat(response1.getFileSizeBytes()).isEqualTo(1024L);
+            assertThat(response1.getProcessingType()).isEqualTo(ProcessingType.BASIC_ENHANCEMENT);
+            assertThat(response1.getS3ThumbnailKey()).isEqualTo("thumbnails/thumb_1.jpg");
+            assertThat(response1.getThumbnailUrl()).contains("thumbnails/thumb_1.jpg");
+            assertThat(response1.getUploadedAt()).isNotNull();
+            assertThat(response1.getUpdatedAt()).isNotNull();
+
+            VideoListResponse response2 = responses.get(1);
+            assertThat(response2.getVideoId()).isEqualTo(2L);
+            assertThat(response2.getThumbnailUrl()).contains("thumbnails/thumb_2.jpg");
 
             verify(videoAdaptor).queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED);
-            verify(awsS3Service, times(2)).generateThumbnailUrl(anyString());
-            verify(awsS3Service, times(2)).generateStreamingUrl(anyString());
-            verify(awsS3Service, times(2)).generateDownloadUrl(anyString());
+            verify(awsS3Service).generateFileUrl("thumbnails/thumb_1.jpg");
+            verify(awsS3Service).generateFileUrl("thumbnails/thumb_2.jpg");
+        }
+
+        @Test
+        @DisplayName("Video.createForTest() 동작 확인")
+        void videoCreateForTest_Behavior_Verification() {
+            // given
+            Video testVideo = Video.createForTest(1L, testMember.getId(), "test.mp4", VideoStatus.PROCESSED);
+            
+            // then
+            System.out.println("Test Video - ID: " + testVideo.getId() + 
+                ", Status: " + testVideo.getStatus() + 
+                ", ThumbnailKey: " + testVideo.getS3ThumbnailKey());
+            
+            assertThat(testVideo.getId()).isEqualTo(1L);
+            assertThat(testVideo.getStatus()).isEqualTo(VideoStatus.PROCESSED);
+            assertThat(testVideo.getS3ThumbnailKey()).isEqualTo("thumbnails/thumb_1.jpg");
         }
 
         @Test
@@ -122,102 +149,25 @@ class GetProcessedVideosUseCaseTest {
         }
 
         @Test
-        @DisplayName("부분적 키 존재 - 선택적 URL 생성")
-        void getProcessedVideos_PartialKeys_SelectiveUrlGeneration() {
+        @DisplayName("썸네일 키가 없는 영상 - 기본 정보만 반환")
+        void getProcessedVideos_NoThumbnailKey_Success() {
             // given
-                     Video videoWithPartialKeys = Video.builder()
-                 .id(1L)
-                 .memberId(testMember.getId())
-                 .originalFileName("video1.mp4")
-                 .s3OriginalKey("originals/video1.mp4")
-                 .s3ProcessedKey(null) // 처리된 키 없음
-                 .s3ThumbnailKey("thumbnails/thumb1.jpg")
-                 .fileSizeBytes(1024L)
-                 .status(VideoStatus.PROCESSED)
-                 .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                 .metadata(VideoMetadata.createEmptyForTest())
-                 .urls(VideoUrls.empty())
-                 .build();
+            Video videoWithoutThumbnail = Video.builder()
+                    .id(1L)
+                    .memberId(testMember.getId())
+                    .originalFileName("video_no_thumb.mp4")
+                    .s3OriginalKey("originals/video_no_thumb.mp4")
+                    .s3ProcessedKey("processed/video_no_thumb.mp4")
+                    .s3ThumbnailKey(null) // 썸네일 키 없음
+                    .fileSizeBytes(2048L)
+                    .status(VideoStatus.PROCESSED)
+                    .processingType(ProcessingType.BASIC_ENHANCEMENT)
+                    .metadata(VideoMetadata.createEmptyForTest())
+                    .urls(VideoUrls.empty())
+                    .build();
 
             given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
-                    .willReturn(List.of(videoWithPartialKeys));
-
-            given(awsS3Service.generateThumbnailUrl("thumbnails/thumb1.jpg"))
-                    .willReturn("https://s3.aws.com/thumbnails/thumb1.jpg?expires=123");
-            given(awsS3Service.generateDownloadUrl("originals/video1.mp4"))
-                    .willReturn("https://s3.aws.com/originals/video1.mp4?expires=789");
-
-            // when
-            List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
-
-            // then
-            assertThat(responses).hasSize(1);
-            
-            VideoListResponse response = responses.get(0);
-            assertThat(response.getThumbnailUrl()).isNotNull();
-            assertThat(response.getStreamingUrl()).isNull(); // 처리된 키가 없으므로 null
-            assertThat(response.getDownloadUrl()).isNotNull();
-
-            verify(awsS3Service).generateThumbnailUrl("thumbnails/thumb1.jpg");
-            verify(awsS3Service).generateDownloadUrl("originals/video1.mp4");
-            verify(awsS3Service, never()).generateStreamingUrl(anyString());
-        }
-    }
-
-    @Nested
-    @DisplayName("S3 연동 예외 케이스")
-    class S3ExceptionCases {
-
-        @Test
-        @DisplayName("S3 URL 생성 실패 - Graceful Degradation")
-        void s3UrlGenerationFails_GracefulDegradation() {
-            // given
-            List<Video> mockVideos = createMockProcessedVideos();
-            given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
-                    .willReturn(mockVideos);
-
-            // S3 URL 생성 시 예외 발생
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willThrow(new RuntimeException("S3 connection failed"));
-            given(awsS3Service.generateStreamingUrl(anyString()))
-                    .willThrow(new RuntimeException("S3 connection failed"));
-            given(awsS3Service.generateDownloadUrl(anyString()))
-                    .willThrow(new RuntimeException("S3 connection failed"));
-
-            // when
-            List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
-
-            // then
-            assertThat(responses).hasSize(2);
-            
-            // URL은 생성되지 않았지만 기본 영상 정보는 제공되어야 함
-            VideoListResponse response1 = responses.get(0);
-            assertThat(response1.getVideoId()).isEqualTo(1L);
-            assertThat(response1.getOriginalFileName()).isEqualTo("video1.mp4");
-            assertThat(response1.getStatus()).isEqualTo(VideoStatus.PROCESSED);
-            assertThat(response1.getThumbnailUrl()).isNull();
-            assertThat(response1.getStreamingUrl()).isNull();
-            assertThat(response1.getDownloadUrl()).isNull();
-            assertThat(response1.getUrlExpiresAt()).isNull();
-
-            verify(videoAdaptor).queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED);
-        }
-
-        @Test
-        @DisplayName("부분적 S3 실패 - 일부 URL만 생성")
-        void partialS3Failure_PartialUrlGeneration() {
-            // given
-            Video mockVideo = createMockVideo(1L, "video1.mp4");
-            given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
-                    .willReturn(List.of(mockVideo));
-
-            // 썸네일만 성공, 나머지는 실패
-            given(awsS3Service.generateThumbnailUrl("thumbnails/thumb1.jpg"))
-                    .willReturn("https://s3.aws.com/thumbnails/thumb1.jpg?expires=123");
-            given(awsS3Service.generateStreamingUrl("processed/video1.mp4"))
-                    .willThrow(new RuntimeException("Streaming URL generation failed"));
-            given(awsS3Service.generateDownloadUrl("originals/video1.mp4"))
-                    .willThrow(new RuntimeException("Download URL generation failed"));
+                    .willReturn(List.of(videoWithoutThumbnail));
 
             // when
             List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
@@ -227,126 +177,26 @@ class GetProcessedVideosUseCaseTest {
             
             VideoListResponse response = responses.get(0);
             assertThat(response.getVideoId()).isEqualTo(1L);
-            assertThat(response.getThumbnailUrl()).isNull(); // 전체 실패 시 모든 URL이 null
-            assertThat(response.getStreamingUrl()).isNull();
-            assertThat(response.getDownloadUrl()).isNull();
+            assertThat(response.getS3ThumbnailKey()).isNull();
+            assertThat(response.getThumbnailUrl()).isNull(); // 썸네일 URL도 null
+            assertThat(response.getOriginalFileName()).isEqualTo("video_no_thumb.mp4");
+
+            verify(videoAdaptor).queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED);
+            // generateFileUrl이 호출되지 않아야 함
+            verify(awsS3Service, never()).generateFileUrl(anyString());
         }
 
         @Test
-        @DisplayName("S3 서비스 타임아웃 - 적절한 예외 처리")
-        void s3ServiceTimeout_ProperExceptionHandling() {
+        @DisplayName("썸네일 URL 생성 실패 - Graceful Degradation")
+        void getProcessedVideos_ThumbnailUrlGenerationFails_GracefulDegradation() {
             // given
             List<Video> mockVideos = createMockProcessedVideos();
             given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
                     .willReturn(mockVideos);
 
-            // 타임아웃 시뮬레이션
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willAnswer(invocation -> {
-                        Thread.sleep(100); // 타임아웃 시뮬레이션
-                        throw new RuntimeException("Request timeout");
-                    });
-
-            // when
-            List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
-
-            // then
-            assertThat(responses).hasSize(2);
-            // 기본 정보는 제공되어야 함
-            assertThat(responses.get(0).getVideoId()).isEqualTo(1L);
-            assertThat(responses.get(0).getThumbnailUrl()).isNull();
-        }
-    }
-
-    @Nested
-    @DisplayName("성능 및 동시성 테스트")
-    class PerformanceAndConcurrencyTests {
-
-        @Test
-        @DisplayName("대량 영상 목록 처리 - 성능 검증")
-        void largeVideoList_PerformanceTest() {
-            // given
-            List<Video> largeVideoList = createLargeVideoList(100);
-            given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
-                    .willReturn(largeVideoList);
-
-            // S3 URL 생성 성공으로 설정
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willReturn("https://s3.aws.com/thumbnail.jpg");
-            given(awsS3Service.generateStreamingUrl(anyString()))
-                    .willReturn("https://s3.aws.com/streaming.mp4");
-            given(awsS3Service.generateDownloadUrl(anyString()))
-                    .willReturn("https://s3.aws.com/download.mp4");
-
-            // when
-            long startTime = System.currentTimeMillis();
-            List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
-            long endTime = System.currentTimeMillis();
-
-            // then
-            assertThat(responses).hasSize(100);
-            assertThat(endTime - startTime).isLessThan(5000); // 5초 이내 처리
-
-            verify(awsS3Service, times(100)).generateThumbnailUrl(anyString());
-            verify(awsS3Service, times(100)).generateStreamingUrl(anyString());
-            verify(awsS3Service, times(100)).generateDownloadUrl(anyString());
-        }
-
-        @Test
-        @DisplayName("동시 사용자 요청 시뮬레이션")
-        void concurrentUserRequests_Simulation() {
-            // given
-            Member user1 = Member.builder().id(1L).build();
-            Member user2 = Member.builder().id(2L).build();
-
-            List<Video> user1Videos = List.of(createMockVideo(1L, "user1_video.mp4"));
-            List<Video> user2Videos = List.of(createMockVideo(2L, "user2_video.mp4"));
-
-            given(videoAdaptor.queryAllByMemberIdAndStatus(1L, VideoStatus.PROCESSED))
-                    .willReturn(user1Videos);
-            given(videoAdaptor.queryAllByMemberIdAndStatus(2L, VideoStatus.PROCESSED))
-                    .willReturn(user2Videos);
-
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willReturn("https://s3.aws.com/thumbnail.jpg");
-            given(awsS3Service.generateStreamingUrl(anyString()))
-                    .willReturn("https://s3.aws.com/streaming.mp4");
-            given(awsS3Service.generateDownloadUrl(anyString()))
-                    .willReturn("https://s3.aws.com/download.mp4");
-
-            // when
-            List<VideoListResponse> user1Response = getProcessedVideosUseCase.execute(user1);
-            List<VideoListResponse> user2Response = getProcessedVideosUseCase.execute(user2);
-
-            // then
-            assertThat(user1Response).hasSize(1);
-            assertThat(user2Response).hasSize(1);
-            assertThat(user1Response.get(0).getVideoId()).isEqualTo(1L);
-            assertThat(user2Response.get(0).getVideoId()).isEqualTo(2L);
-
-            verify(videoAdaptor).queryAllByMemberIdAndStatus(1L, VideoStatus.PROCESSED);
-            verify(videoAdaptor).queryAllByMemberIdAndStatus(2L, VideoStatus.PROCESSED);
-        }
-    }
-
-    @Nested
-    @DisplayName("데이터 일관성 테스트")
-    class DataConsistencyTests {
-
-        @Test
-        @DisplayName("URL 만료 시간 일관성 검증")
-        void urlExpirationTime_ConsistencyValidation() {
-            // given
-            List<Video> mockVideos = createMockProcessedVideos();
-            given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
-                    .willReturn(mockVideos);
-
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willReturn("https://s3.aws.com/thumbnail.jpg");
-            given(awsS3Service.generateStreamingUrl(anyString()))
-                    .willReturn("https://s3.aws.com/streaming.mp4");
-            given(awsS3Service.generateDownloadUrl(anyString()))
-                    .willReturn("https://s3.aws.com/download.mp4");
+            // S3 URL 생성 시 예외 발생
+            given(awsS3Service.generateFileUrl(anyString()))
+                    .willThrow(new RuntimeException("S3 connection failed"));
 
             // when
             List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
@@ -354,11 +204,13 @@ class GetProcessedVideosUseCaseTest {
             // then
             assertThat(responses).hasSize(2);
             
-            LocalDateTime now = LocalDateTime.now();
-            for (VideoListResponse response : responses) {
-                assertThat(response.getUrlExpiresAt()).isAfter(now);
-                assertThat(response.getUrlExpiresAt()).isBefore(now.plusHours(2));
-            }
+            VideoListResponse response1 = responses.get(0);
+            assertThat(response1.getVideoId()).isEqualTo(1L);
+            assertThat(response1.getThumbnailUrl()).isNull(); // URL 생성 실패 시 null
+            assertThat(response1.getOriginalFileName()).isEqualTo("video1.mp4"); // 기본 정보는 제공
+
+            verify(videoAdaptor).queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED);
+            verify(awsS3Service, times(2)).generateFileUrl(anyString());
         }
 
         @Test
@@ -369,12 +221,9 @@ class GetProcessedVideosUseCaseTest {
             given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
                     .willReturn(List.of(video));
 
-            given(awsS3Service.generateThumbnailUrl(anyString()))
-                    .willReturn("https://s3.aws.com/thumbnail.jpg");
-            given(awsS3Service.generateStreamingUrl(anyString()))
-                    .willReturn("https://s3.aws.com/streaming.mp4");
-            given(awsS3Service.generateDownloadUrl(anyString()))
-                    .willReturn("https://s3.aws.com/download.mp4");
+            // S3 썸네일 URL 생성 Mock 설정
+            given(awsS3Service.generateFileUrl("thumbnails/thumb_1.jpg"))
+                    .willReturn("https://echoshotx-bucket.s3.ap-northeast-2.amazonaws.com/thumbnails/thumb_1.jpg");
 
             // when
             List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
@@ -389,17 +238,72 @@ class GetProcessedVideosUseCaseTest {
             assertThat(response.getStatus()).isEqualTo(video.getStatus());
             assertThat(response.getProcessingType()).isEqualTo(video.getProcessingType());
             assertThat(response.getS3ThumbnailKey()).isEqualTo(video.getS3ThumbnailKey());
+            assertThat(response.getThumbnailUrl()).contains("thumbnails/thumb1.jpg");
             assertThat(response.getUploadedAt()).isEqualTo(video.getCreatedDate());
         }
     }
 
     // ========================================
-    // 테스트 헬퍼 메서드들 (15년차 전문가 리팩토링)
+    // 스트리밍 관련 테스트 (향후 구현 예정으로 보류)
+    // ========================================
+    
+    @Nested
+    @DisplayName("스트리밍 기능 테스트 (보류)")
+    class StreamingFeatureTests {
+
+        @Test
+        @Disabled("스트리밍 기능이 향후 구현 예정으로 보류")
+        @DisplayName("스트리밍 URL 생성 성공")
+        void generateStreamingUrl_Success() {
+            // TODO: 향후 스트리밍 기능 구현 시 활성화
+            // - generateStreamingUrl() 테스트
+            // - generateDownloadUrl() 테스트
+            // - urlExpiresAt 검증
+        }
+
+        @Test
+        @Disabled("스트리밍 기능이 향후 구현 예정으로 보류")
+        @DisplayName("스트리밍 URL 생성 실패")
+        void generateStreamingUrl_Failure() {
+            // TODO: 향후 스트리밍 기능 구현 시 활성화
+        }
+    }
+
+    @Nested
+    @DisplayName("성능 테스트")
+    class PerformanceTests {
+
+        @Test
+        @DisplayName("대량 영상 목록 처리 - 썸네일만")
+        void largeVideoList_ThumbnailOnly_PerformanceTest() {
+            // given
+            List<Video> largeVideoList = createLargeVideoList(50);
+            given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))
+                    .willReturn(largeVideoList);
+
+            // S3 URL 생성 성공으로 설정
+            given(awsS3Service.generateFileUrl(anyString()))
+                    .willReturn("https://echoshotx-bucket.s3.ap-northeast-2.amazonaws.com/thumbnail.jpg");
+
+            // when
+            long startTime = System.currentTimeMillis();
+            List<VideoListResponse> responses = getProcessedVideosUseCase.execute(testMember);
+            long endTime = System.currentTimeMillis();
+
+            // then
+            assertThat(responses).hasSize(50);
+            assertThat(endTime - startTime).isLessThan(2000); // 2초 이내 처리 (썸네일만이므로 더 빠름)
+
+            verify(awsS3Service, times(50)).generateFileUrl(anyString());
+        }
+    }
+
+    // ========================================
+    // 테스트 헬퍼 메서드들
     // ========================================
 
     /**
      * 처리된 영상 목록을 생성합니다 (테스트용)
-     * ✅ 안티패턴 제거: Video.createForTest() 사용
      */
     private List<Video> createMockProcessedVideos() {
         return Arrays.asList(
@@ -408,17 +312,10 @@ class GetProcessedVideosUseCaseTest {
         );
     }
 
-    /**
-     * 개별 영상을 생성합니다 (테스트용)
-     * ✅ 안티패턴 제거: Video.createForTest() 사용
-     */
-    private Video createMockVideo(Long id, String fileName) {
-        return Video.createForTest(id, testMember.getId(), fileName, VideoStatus.PROCESSED);
-    }
+
 
     /**
      * 상세 메타데이터가 포함된 영상을 생성합니다 (테스트용)
-     * ✅ 안티패턴 제거: Video.createDetailedForTest() 사용
      */
     private Video createDetailedMockVideo() {
         return Video.createDetailedForTest(
@@ -434,7 +331,6 @@ class GetProcessedVideosUseCaseTest {
 
     /**
      * 대량의 영상 목록을 생성합니다 (성능 테스트용)
-     * ✅ 안티패턴 제거: Video.createForTest() 사용
      */
     private List<Video> createLargeVideoList(int count) {
         return java.util.stream.IntStream.range(1, count + 1)

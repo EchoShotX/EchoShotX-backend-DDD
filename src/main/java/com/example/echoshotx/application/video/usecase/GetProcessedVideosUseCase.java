@@ -10,7 +10,7 @@ import com.example.echoshotx.presentation.video.dto.response.VideoListResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.LocalDateTime;
+
 import java.util.List;
 
 @Slf4j
@@ -32,16 +32,17 @@ public class GetProcessedVideosUseCase {
         
         log.info("Found {} processed videos for member: {}", processedVideos.size(), member.getId());
         
-        // 각 영상에 대해 Pre-signed URL 생성
+        // 각 영상에 대해 썸네일 URL 생성 (스트리밍 기능은 보류)
         return processedVideos.stream()
-                .map(this::enrichWithUrls)
+                .map(this::enrichWithThumbnailUrl)
                 .toList();
     }
 
     /**
-     * 영상 정보에 Pre-signed URL들을 추가합니다
+     * 영상 정보에 썸네일 URL을 추가합니다
+     * 스트리밍 관련 기능은 향후 구현 예정으로 보류
      */
-    private VideoListResponse enrichWithUrls(Video video) {
+    private VideoListResponse enrichWithThumbnailUrl(Video video) {
         try {
             // 기본 Response 생성
             VideoListResponse.VideoListResponseBuilder builder = VideoListResponse.builder()
@@ -54,33 +55,26 @@ public class GetProcessedVideosUseCase {
                     .uploadedAt(video.getCreatedDate())
                     .updatedAt(video.getLastModifiedDate());
 
-            // URL 만료 시간 설정 (1시간 후)
-            LocalDateTime expiresAt = LocalDateTime.now().plusHours(1);
-
-            // 썸네일 URL 생성
+            // 썸네일 URL 생성 (Public URL 방식 사용)
             if (video.getS3ThumbnailKey() != null) {
-                String thumbnailUrl = awsS3Service.generateThumbnailUrl(video.getS3ThumbnailKey());
+                log.info("Generating thumbnail URL for video {} with key: {}", video.getId(), video.getS3ThumbnailKey());
+                String thumbnailUrl = awsS3Service.generateFileUrl(video.getS3ThumbnailKey());
                 builder.thumbnailUrl(thumbnailUrl);
+                log.info("Generated thumbnail URL for video {}: {}", video.getId(), thumbnailUrl);
+            } else {
+                log.info("No thumbnail key for video {}, skipping URL generation", video.getId());
             }
 
-            // 스트리밍 URL 생성 (AI 처리된 영상)
-            if (video.getS3ProcessedKey() != null) {
-                String streamingUrl = awsS3Service.generateStreamingUrl(video.getS3ProcessedKey());
-                builder.streamingUrl(streamingUrl);
-            }
-
-            // 다운로드 URL 생성 (원본 영상)
-            if (video.getS3OriginalKey() != null) {
-                String downloadUrl = awsS3Service.generateDownloadUrl(video.getS3OriginalKey());
-                builder.downloadUrl(downloadUrl);
-            }
-
-            builder.urlExpiresAt(expiresAt);
+            // 스트리밍 관련 기능은 보류
+            // TODO: 향후 스트리밍 기능 구현 시 추가
+            // - generateStreamingUrl()
+            // - generateDownloadUrl()
+            // - urlExpiresAt 설정
 
             return builder.build();
 
         } catch (Exception e) {
-            log.error("Failed to generate URLs for video: {}, error: {}", video.getId(), e.getMessage());
+            log.error("Failed to generate thumbnail URL for video: {}, error: {}", video.getId(), e.getMessage());
             
             // URL 생성 실패 시에도 기본 정보는 제공
             return VideoListResponse.builder()

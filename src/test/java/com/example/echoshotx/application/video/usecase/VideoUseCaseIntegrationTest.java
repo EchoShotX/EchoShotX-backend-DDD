@@ -135,8 +135,8 @@ class VideoUseCaseIntegrationTest {
             assertThat(listResponse.get(0).getVideoId()).isEqualTo(1L);
             assertThat(listResponse.get(0).getStatus()).isEqualTo(VideoStatus.PROCESSED);
             assertThat(listResponse.get(0).getThumbnailUrl()).isNotNull();
-            assertThat(listResponse.get(0).getStreamingUrl()).isNotNull();
-            assertThat(listResponse.get(0).getDownloadUrl()).isNotNull();
+//            assertThat(listResponse.get(0).getStreamingUrl()).isNotNull();
+//            assertThat(listResponse.get(0).getDownloadUrl()).isNotNull();
 
             // 전체 플로우 검증
             verify(videoService).uploadVideo(eq(testVideoFile), eq(testMember.getId()), eq(ProcessingType.BASIC_ENHANCEMENT));
@@ -264,8 +264,8 @@ class VideoUseCaseIntegrationTest {
             assertThat(responses.get(0).getStatus()).isEqualTo(VideoStatus.PROCESSED);
             // URL 생성 실패로 인해 모든 URL이 null이어야 함
             assertThat(responses.get(0).getThumbnailUrl()).isNull();
-            assertThat(responses.get(0).getStreamingUrl()).isNull();
-            assertThat(responses.get(0).getDownloadUrl()).isNull();
+//            assertThat(responses.get(0).getStreamingUrl()).isNull();
+//            assertThat(responses.get(0).getDownloadUrl()).isNull();
         }
 
         @Test
@@ -327,8 +327,8 @@ class VideoUseCaseIntegrationTest {
             // 모든 응답에 URL이 포함되어야 함
             responses.forEach(response -> {
                 assertThat(response.getThumbnailUrl()).isNotNull();
-                assertThat(response.getStreamingUrl()).isNotNull();
-                assertThat(response.getDownloadUrl()).isNotNull();
+//                assertThat(response.getStreamingUrl()).isNotNull();
+//                assertThat(response.getDownloadUrl()).isNotNull();
             });
         }
 

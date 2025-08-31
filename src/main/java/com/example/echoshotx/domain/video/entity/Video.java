@@ -61,6 +61,7 @@ public class Video extends BaseTimeEntity {
     @Embedded
     private VideoMetadata metadata;
 
+    // todo 추후 presigned 방식으로 변경
     @Embedded
     private VideoUrls urls;
 
@@ -82,7 +83,7 @@ public class Video extends BaseTimeEntity {
                 .status(VideoStatus.UPLOADED)
                 .processingType(processingType)
                 .metadata(metadata)
-                .urls(VideoUrls.empty())
+//                .urls(VideoUrls.empty())
                 .build();
     }
 
