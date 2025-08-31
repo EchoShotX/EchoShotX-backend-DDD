@@ -238,7 +238,7 @@ class GetProcessedVideosUseCaseTest {
             assertThat(response.getStatus()).isEqualTo(video.getStatus());
             assertThat(response.getProcessingType()).isEqualTo(video.getProcessingType());
             assertThat(response.getS3ThumbnailKey()).isEqualTo(video.getS3ThumbnailKey());
-            assertThat(response.getThumbnailUrl()).contains("thumbnails/thumb1.jpg");
+            assertThat(response.getThumbnailUrl()).contains("thumbnails/thumb_1.jpg");
             assertThat(response.getUploadedAt()).isEqualTo(video.getCreatedDate());
         }
     }
