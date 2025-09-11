@@ -8,6 +8,9 @@ import com.example.echoshotx.domain.video.exception.VideoHandler;
 import com.example.echoshotx.domain.video.repository.VideoRepository;
 import com.example.echoshotx.domain.video.validator.VideoValidator;
 import com.example.echoshotx.domain.video.vo.VideoMetadata;
+import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
+import com.example.echoshotx.infrastructure.ai.dto.response.FaceRecognitionResponse;
+import com.example.echoshotx.infrastructure.ai.dto.response.MusicAnalysisResponse;
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import com.example.echoshotx.infrastructure.service.AwsS3Service;
@@ -69,5 +72,81 @@ public class VideoService {
         );
     }
 
+    /**
+     * Video ID로 조회
+     */
+    public Video findById(Long videoId) {
+        return videoRepository.findById(videoId)
+                .orElseThrow(() -> new VideoHandler(VideoErrorStatus.VIDEO_NOT_FOUND));
+    }
+
+    /**
+     * Video 저장
+     */
+    @Transactional
+    public Video save(Video video) {
+        return videoRepository.save(video);
+    }
+
+    /**
+     * 영상처리 결과 업데이트
+     */
+    @Transactional
+    public void updateVideoProcessingResult(Long videoId, 
+                                          VideoProcessingResponse.ProcessingStatus status,
+                                          String outputVideoUrl,
+                                          String thumbnailUrl) {
+        Video video = findById(videoId);
+        video.updateProcessingStatus(status.name());
+        video.updateOutputVideoUrl(outputVideoUrl);
+        video.updateThumbnailUrl(thumbnailUrl);
+        save(video);
+        
+        log.info("영상처리 결과 업데이트 완료: videoId={}, status={}", videoId, status);
+    }
+
+    /**
+     * 얼굴인식 결과 업데이트
+     */
+    @Transactional
+    public void updateFaceRecognitionResult(Long videoId,
+                                          FaceRecognitionResponse.ProcessingStatus status,
+                                          String outputDataUrl) {
+        Video video = findById(videoId);
+        video.updateFaceRecognitionStatus(status.name());
+        video.updateFaceRecognitionDataUrl(outputDataUrl);
+        save(video);
+        
+        log.info("얼굴인식 결과 업데이트 완료: videoId={}, status={}", videoId, status);
+    }
+
+    /**
+     * 음악분석 결과 업데이트
+     */
+    @Transactional
+    public void updateMusicAnalysisResult(Long videoId,
+                                        MusicAnalysisResponse.ProcessingStatus status,
+                                        String outputDataUrl) {
+        Video video = findById(videoId);
+        video.updateMusicAnalysisStatus(status.name());
+        video.updateMusicAnalysisDataUrl(outputDataUrl);
+        save(video);
+        
+        log.info("음악분석 결과 업데이트 완료: videoId={}, status={}", videoId, status);
+    }
+
+    /**
+     * 사용자별 영상 목록 조회
+     */
+    public List<Video> findByMemberId(Long memberId) {
+        return videoRepository.findByMemberId(memberId);
+    }
+
+    /**
+     * 처리 상태별 영상 목록 조회
+     */
+    public List<Video> findByStatus(VideoStatus status) {
+        return videoRepository.findByStatus(status);
+    }
 
 }

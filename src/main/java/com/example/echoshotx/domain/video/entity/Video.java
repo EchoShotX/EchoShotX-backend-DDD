@@ -65,6 +65,28 @@ public class Video extends BaseTimeEntity {
     @Embedded
     private VideoUrls urls;
 
+    // AI 서버 연동 필드들
+    @Column(name = "processing_status")
+    private String processingStatus; // PROCESSING, SUCCEEDED, FAILED, CANCELLED
+
+    @Column(name = "output_video_url")
+    private String outputVideoUrl;
+
+    @Column(name = "thumbnail_url")
+    private String thumbnailUrl;
+
+    @Column(name = "face_recognition_status")
+    private String faceRecognitionStatus;
+
+    @Column(name = "face_recognition_data_url")
+    private String faceRecognitionDataUrl;
+
+    @Column(name = "music_analysis_status")
+    private String musicAnalysisStatus;
+
+    @Column(name = "music_analysis_data_url")
+    private String musicAnalysisDataUrl;
+
     public static Video create(
             Long memberId,
             MultipartFile file,
@@ -301,6 +323,75 @@ public class Video extends BaseTimeEntity {
      */
     public boolean canReprocess() {
         return this.status == VideoStatus.FAILED || this.status == VideoStatus.UPLOADED;
+    }
+
+    // ========== AI 서버 연동 메서드들 ==========
+
+    /**
+     * 영상처리 상태를 업데이트합니다
+     */
+    public void updateProcessingStatus(String status) {
+        this.processingStatus = status;
+    }
+
+    /**
+     * 출력 영상 URL을 업데이트합니다
+     */
+    public void updateOutputVideoUrl(String outputVideoUrl) {
+        this.outputVideoUrl = outputVideoUrl;
+    }
+
+    /**
+     * 썸네일 URL을 업데이트합니다
+     */
+    public void updateThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
+    }
+
+    /**
+     * 얼굴인식 상태를 업데이트합니다
+     */
+    public void updateFaceRecognitionStatus(String status) {
+        this.faceRecognitionStatus = status;
+    }
+
+    /**
+     * 얼굴인식 데이터 URL을 업데이트합니다
+     */
+    public void updateFaceRecognitionDataUrl(String dataUrl) {
+        this.faceRecognitionDataUrl = dataUrl;
+    }
+
+    /**
+     * 음악분석 상태를 업데이트합니다
+     */
+    public void updateMusicAnalysisStatus(String status) {
+        this.musicAnalysisStatus = status;
+    }
+
+    /**
+     * 음악분석 데이터 URL을 업데이트합니다
+     */
+    public void updateMusicAnalysisDataUrl(String dataUrl) {
+        this.musicAnalysisDataUrl = dataUrl;
+    }
+
+    /**
+     * AI 처리가 완료되었는지 확인합니다
+     */
+    public boolean isAiProcessingCompleted() {
+        return "SUCCEEDED".equals(this.processingStatus) ||
+               "SUCCEEDED".equals(this.faceRecognitionStatus) ||
+               "SUCCEEDED".equals(this.musicAnalysisStatus);
+    }
+
+    /**
+     * AI 처리가 실패했는지 확인합니다
+     */
+    public boolean isAiProcessingFailed() {
+        return "FAILED".equals(this.processingStatus) ||
+               "FAILED".equals(this.faceRecognitionStatus) ||
+               "FAILED".equals(this.musicAnalysisStatus);
     }
 
     // ========================================

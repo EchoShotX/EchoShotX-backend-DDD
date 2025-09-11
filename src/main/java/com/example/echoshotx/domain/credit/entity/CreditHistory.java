@@ -66,6 +66,21 @@ public class CreditHistory extends BaseTimeEntity {
                 .description(description)
                 .build();
     }
+
+    /**
+     * AI 서버 연동용 크레딧 사용 내역 생성
+     */
+    public static CreditHistory createUsage(Long memberId, Long videoId, 
+                                          Integer amount, String description) {
+        return CreditHistory.builder()
+                .memberId(memberId)
+                .transactionType(TransactionType.USAGE)
+                .amount(amount)
+                .videoId(videoId)
+                .processingType(null)
+                .description(description)
+                .build();
+    }
     
     /**
      * 크레딧 충전 내역 생성
@@ -92,6 +107,22 @@ public class CreditHistory extends BaseTimeEntity {
                 .transactionType(TransactionType.REFUND)
                 .amount(amount)
                 .videoId(videoId)
+                .processingType(null)
+                .description(description)
+                .build();
+    }
+
+    /**
+     * AI 서버 연동용 크레딧 환불 내역 생성
+     */
+    public static CreditHistory createRefund(Long memberId, Integer amount, String reason) {
+        String description = String.format("크레딧 환불: %s", reason);
+        
+        return CreditHistory.builder()
+                .memberId(memberId)
+                .transactionType(TransactionType.REFUND)
+                .amount(amount)
+                .videoId(null)
                 .processingType(null)
                 .description(description)
                 .build();

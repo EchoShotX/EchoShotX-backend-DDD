@@ -92,4 +92,38 @@ public class CreditService {
         return creditHistoryRepository.save(creditHistory);
     }
 
+    /**
+     * AI 서버 연동용 크레딧 차감
+     */
+    @Transactional
+    public CreditHistory deductCredits(Long memberId, Integer amount, String description) {
+        Member member = memberAdaptor.queryById(memberId);
+        
+        // 회원 크레딧 차감
+        member.useCredits(amount);
+        
+        log.info("Deducted {} credits from member: {}, description: {}", amount, memberId, description);
+        
+        // 차감 내역 기록
+        CreditHistory creditHistory = CreditHistory.createUsage(memberId, null, amount, description);
+        return creditHistoryRepository.save(creditHistory);
+    }
+
+    /**
+     * AI 서버 연동용 크레딧 환불
+     */
+    @Transactional
+    public CreditHistory refundCredits(Long memberId, Integer amount, String reason) {
+        Member member = memberAdaptor.queryById(memberId);
+        
+        // 회원 크레딧 환불
+        member.addCredits(amount);
+        
+        log.info("Refunded {} credits to member: {}, reason: {}", amount, memberId, reason);
+        
+        // 환불 내역 기록
+        CreditHistory creditHistory = CreditHistory.createRefund(memberId, null, amount, reason);
+        return creditHistoryRepository.save(creditHistory);
+    }
+
 }
