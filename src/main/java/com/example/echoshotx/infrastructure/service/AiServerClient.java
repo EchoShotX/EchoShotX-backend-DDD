@@ -1,7 +1,7 @@
 package com.example.echoshotx.infrastructure.service;
 
-import com.example.echoshotx.infrastructure.ai.dto.request.*;
-import com.example.echoshotx.infrastructure.ai.dto.response.*;
+import com.example.echoshotx.infrastructure.ai.dto.request.VideoProcessingRequest;
+import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,11 +20,10 @@ public class AiServerClient {
     private final WebClient aiServerWebClient;
     
     /**
-     * 영상 처리 요청 (A영상 → C영상 변환)
+     * 영상 업스케일링 요청 (A영상 → C영상 변환)
      */
     public Mono<VideoProcessingResponse> processVideo(VideoProcessingRequest request) {
-        log.info("AI 서버 영상처리 요청 시작: videoId={}, type={}", 
-                request.getVideoId(), request.getProcessingType());
+        log.info("AI 서버 영상 업스케일링 요청 시작: videoId={}", request.getVideoId());
         
         Supplier<Mono<VideoProcessingResponse>> supplier = () ->
             aiServerWebClient.post()
@@ -34,59 +33,13 @@ public class AiServerClient {
                 .bodyToMono(VideoProcessingResponse.class)
                 .timeout(Duration.ofMinutes(30))
                 .doOnSuccess(response -> 
-                    log.info("영상처리 요청 성공: videoId={}, status={}", 
+                    log.info("영상 업스케일링 요청 성공: videoId={}, status={}", 
                             response.getVideoId(), response.getStatus()))
                 .doOnError(error -> 
-                    log.error("영상처리 요청 실패: videoId={}, error={}", 
+                    log.error("영상 업스케일링 요청 실패: videoId={}, error={}", 
                             request.getVideoId(), error.getMessage()));
         
         return executeWithResilience(supplier, "processVideo");
-    }
-    
-    /**
-     * 얼굴 인식 요청
-     */
-    public Mono<FaceRecognitionResponse> recognizeFaces(FaceRecognitionRequest request) {
-        log.info("AI 서버 얼굴인식 요청 시작: videoId={}", request.getVideoId());
-        
-        Supplier<Mono<FaceRecognitionResponse>> supplier = () ->
-            aiServerWebClient.post()
-                .uri("/api/face/recognize")
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(FaceRecognitionResponse.class)
-                .timeout(Duration.ofMinutes(10))
-                .doOnSuccess(response -> 
-                    log.info("얼굴인식 요청 성공: videoId={}, status={}", 
-                            response.getVideoId(), response.getStatus()))
-                .doOnError(error -> 
-                    log.error("얼굴인식 요청 실패: videoId={}, error={}", 
-                            request.getVideoId(), error.getMessage()));
-        
-        return executeWithResilience(supplier, "recognizeFaces");
-    }
-    
-    /**
-     * 음악 분석 요청
-     */
-    public Mono<MusicAnalysisResponse> analyzeMusic(MusicAnalysisRequest request) {
-        log.info("AI 서버 음악분석 요청 시작: videoId={}", request.getVideoId());
-        
-        Supplier<Mono<MusicAnalysisResponse>> supplier = () ->
-            aiServerWebClient.post()
-                .uri("/api/music/analyze")
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(MusicAnalysisResponse.class)
-                .timeout(Duration.ofMinutes(5))
-                .doOnSuccess(response -> 
-                    log.info("음악분석 요청 성공: videoId={}, status={}", 
-                            response.getVideoId(), response.getStatus()))
-                .doOnError(error -> 
-                    log.error("음악분석 요청 실패: videoId={}, error={}", 
-                            request.getVideoId(), error.getMessage()));
-        
-        return executeWithResilience(supplier, "analyzeMusic");
     }
     
     /**
@@ -103,38 +56,6 @@ public class AiServerClient {
                 .timeout(Duration.ofSeconds(30));
         
         return executeWithResilience(supplier, "getVideoProcessingStatus");
-    }
-    
-    /**
-     * 얼굴 인식 상태 조회
-     */
-    public Mono<FaceRecognitionResponse> getFaceRecognitionStatus(Long videoId) {
-        log.debug("얼굴인식 상태 조회: videoId={}", videoId);
-        
-        Supplier<Mono<FaceRecognitionResponse>> supplier = () ->
-            aiServerWebClient.get()
-                .uri("/api/face/status/{videoId}", videoId)
-                .retrieve()
-                .bodyToMono(FaceRecognitionResponse.class)
-                .timeout(Duration.ofSeconds(30));
-        
-        return executeWithResilience(supplier, "getFaceRecognitionStatus");
-    }
-    
-    /**
-     * 음악 분석 상태 조회
-     */
-    public Mono<MusicAnalysisResponse> getMusicAnalysisStatus(Long videoId) {
-        log.debug("음악분석 상태 조회: videoId={}", videoId);
-        
-        Supplier<Mono<MusicAnalysisResponse>> supplier = () ->
-            aiServerWebClient.get()
-                .uri("/api/music/status/{videoId}", videoId)
-                .retrieve()
-                .bodyToMono(MusicAnalysisResponse.class)
-                .timeout(Duration.ofSeconds(30));
-        
-        return executeWithResilience(supplier, "getMusicAnalysisStatus");
     }
     
     /**
