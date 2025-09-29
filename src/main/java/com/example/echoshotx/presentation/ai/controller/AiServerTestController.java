@@ -1,5 +1,6 @@
 package com.example.echoshotx.presentation.ai.controller;
 
+import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.infrastructure.service.AiServerClient;
 import com.example.echoshotx.infrastructure.ai.dto.request.VideoProcessingRequest;
 import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
@@ -91,7 +92,7 @@ public class AiServerTestController {
     private VideoProcessingResponse createErrorResponse() {
         return VideoProcessingResponse.builder()
             .videoId(0L)
-            .status(VideoProcessingResponse.ProcessingStatus.FAILED)
+            .status(ProcessingStatus.FAILED)
             .errorMessage("AI 서버 연결 실패")
             .build();
     }

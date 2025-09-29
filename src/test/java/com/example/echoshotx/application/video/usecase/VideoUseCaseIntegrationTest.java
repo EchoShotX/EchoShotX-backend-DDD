@@ -388,7 +388,7 @@ class VideoUseCaseIntegrationTest {
                 .status(uploadedVideo.getStatus())
                 .processingType(uploadedVideo.getProcessingType())
                 .metadata(uploadedVideo.getMetadata())
-                .urls(uploadedVideo.getUrls())
+                .videoUrls(uploadedVideo.getVideoUrls())
                 .build();
     }
 
@@ -410,7 +410,7 @@ class VideoUseCaseIntegrationTest {
                 .status(processedVideo.getStatus())
                 .processingType(processedVideo.getProcessingType())
                 .metadata(processedVideo.getMetadata())
-                .urls(processedVideo.getUrls())
+                .videoUrls(processedVideo.getVideoUrls())
                 .build();
     }
 

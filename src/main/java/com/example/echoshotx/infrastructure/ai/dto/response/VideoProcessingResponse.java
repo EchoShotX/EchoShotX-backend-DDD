@@ -1,5 +1,6 @@
 package com.example.echoshotx.infrastructure.ai.dto.response;
 
+import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.domain.video.entity.ProcessingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -23,10 +24,6 @@ public class VideoProcessingResponse {
     private ProcessingResult result;
     private LocalDateTime completedAt;
     private String errorMessage;
-    
-    public enum ProcessingStatus {
-        PROCESSING, SUCCEEDED, FAILED, CANCELLED
-    }
     
     @Getter
     @Builder

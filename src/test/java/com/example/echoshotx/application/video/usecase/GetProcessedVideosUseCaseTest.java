@@ -163,7 +163,7 @@ class GetProcessedVideosUseCaseTest {
                     .status(VideoStatus.PROCESSED)
                     .processingType(ProcessingType.BASIC_ENHANCEMENT)
                     .metadata(VideoMetadata.createEmptyForTest())
-                    .urls(VideoUrls.empty())
+                    .videoUrls(VideoUrls.empty())
                     .build();
 
             given(videoAdaptor.queryAllByMemberIdAndStatus(testMember.getId(), VideoStatus.PROCESSED))

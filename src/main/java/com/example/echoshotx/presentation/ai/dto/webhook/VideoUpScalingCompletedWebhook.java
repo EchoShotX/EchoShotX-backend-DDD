@@ -1,5 +1,6 @@
 package com.example.echoshotx.presentation.ai.dto.webhook;
 
+import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +14,7 @@ import jakarta.validation.constraints.Positive;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoProcessingCompletedWebhook {
+public class VideoUpScalingCompletedWebhook {
     
     @NotNull
     @Positive
@@ -24,7 +25,7 @@ public class VideoProcessingCompletedWebhook {
     private Long memberId;
     
     @NotNull
-    private VideoProcessingResponse.ProcessingStatus status;
+    private ProcessingStatus status;
     
     private String outputVideoUrl;
     private String thumbnailUrl;

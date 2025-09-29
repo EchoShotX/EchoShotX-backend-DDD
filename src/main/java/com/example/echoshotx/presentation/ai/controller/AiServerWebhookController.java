@@ -1,9 +1,10 @@
 package com.example.echoshotx.presentation.ai.controller;
 
 import com.example.echoshotx.domain.credit.service.CreditService;
+import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.domain.video.service.VideoService;
 import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
-import com.example.echoshotx.presentation.ai.dto.webhook.VideoProcessingCompletedWebhook;
+import com.example.echoshotx.presentation.ai.dto.webhook.VideoUpScalingCompletedWebhook;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,18 +23,15 @@ public class AiServerWebhookController {
     private final CreditService creditService;
     
     /**
-     * 영상처리 완료 웹훅
+     * 업스케일링 영상처리 완료 웹훅
      */
-    @PostMapping("/video/processing-completed")
-    public ResponseEntity<Void> handleVideoProcessingCompleted(
-            @Valid @RequestBody VideoProcessingCompletedWebhook webhook) {
+    @PostMapping("/video/upScaling-completed")
+    public ResponseEntity<Void> handleVideoUpScalingCompleted(
+            @Valid @RequestBody VideoUpScalingCompletedWebhook webhook) {
         
         try {
-            log.info("영상처리 완료 웹훅 수신: videoId={}, status={}", 
-                    webhook.getVideoId(), webhook.getStatus());
-            
             // 1. Video 엔티티 업데이트
-            videoService.updateVideoProcessingResult(
+            videoService.updateVideoUpScalingResult(
                 webhook.getVideoId(), 
                 webhook.getStatus(), 
                 webhook.getOutputVideoUrl(),
@@ -41,13 +39,13 @@ public class AiServerWebhookController {
             );
             
             // 2. 크레딧 차감 (성공 시)
-            if (webhook.getStatus() == VideoProcessingResponse.ProcessingStatus.SUCCEEDED) {
+            if (webhook.getStatus() == ProcessingStatus.SUCCEEDED) {
                 creditService.deductCredits(
                     webhook.getMemberId(), 
                     webhook.getCreditsUsed(),
                     "영상처리 완료"
                 );
-            } else if (webhook.getStatus() == VideoProcessingResponse.ProcessingStatus.FAILED) {
+            } else if (webhook.getStatus() == ProcessingStatus.FAILED) {
                 // 3. 실패 시 크레딧 환불
                 creditService.refundCredits(
                     webhook.getMemberId(), 

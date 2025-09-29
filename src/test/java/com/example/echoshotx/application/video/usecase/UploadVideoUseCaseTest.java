@@ -299,7 +299,7 @@ class UploadVideoUseCaseTest {
                 .status(video.getStatus())
                 .processingType(video.getProcessingType())
                 .metadata(video.getMetadata())
-                .urls(video.getUrls())
+                .videoUrls(video.getVideoUrls())
                 .build();
     }
 
@@ -324,7 +324,7 @@ class UploadVideoUseCaseTest {
                 .status(baseVideo.getStatus())
                 .processingType(baseVideo.getProcessingType())
                 .metadata(baseVideo.getMetadata())
-                .urls(baseVideo.getUrls())
+                .videoUrls(baseVideo.getVideoUrls())
                 .build();
     }
 }

@@ -67,4 +67,22 @@ public class VideoUrls {
     public boolean hasDownloadUrl() {
         return downloadUrl != null;
     }
+
+    public VideoUrls updateThumbnailUrl(String thumbnailUrl) {
+        return VideoUrls.builder()
+                .thumbnailUrl(thumbnailUrl)
+                .streamingUrl(this.streamingUrl)
+                .downloadUrl(this.downloadUrl)
+                .expiresAt(this.expiresAt)
+                .build();
+    }
+
+    public VideoUrls updateStreamingUrl(String streamingUrl) {
+        return VideoUrls.builder()
+                .thumbnailUrl(this.thumbnailUrl)
+                .streamingUrl(streamingUrl)
+                .downloadUrl(this.downloadUrl)
+                .expiresAt(this.expiresAt)
+                .build();
+    }
 }
