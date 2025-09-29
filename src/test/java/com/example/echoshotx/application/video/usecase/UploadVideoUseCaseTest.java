@@ -36,13 +36,13 @@ import static org.mockito.BDDMockito.*;
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UploadVideoUseCase 테스트")
-class UpScalingVideoUseCaseTest {
+class UploadVideoUseCaseTest {
 
     @Mock
     private VideoService videoService;
 
     @InjectMocks
-    private UpScalingVideoUseCase upScalingVideoUseCase;
+    private UploadVideoUseCase uploadVideoUseCase;
 
     private Member testMember;
     private MultipartFile validVideoFile;
@@ -83,7 +83,7 @@ class UpScalingVideoUseCaseTest {
                     .willReturn(mockVideo);
 
             // when
-            VideoUploadResponse response = upScalingVideoUseCase.execute(validVideoFile, processingType, testMember);
+            VideoUploadResponse response = uploadVideoUseCase.execute(validVideoFile, processingType, testMember);
 
             // then
             assertThat(response).isNotNull();
@@ -107,7 +107,7 @@ class UpScalingVideoUseCaseTest {
                         .willReturn(mockVideo);
 
                 // when
-                VideoUploadResponse response = upScalingVideoUseCase.execute(validVideoFile, type, testMember);
+                VideoUploadResponse response = uploadVideoUseCase.execute(validVideoFile, type, testMember);
 
                 // then
                 assertThat(response.getProcessingType()).isEqualTo(type);
@@ -134,7 +134,7 @@ class UpScalingVideoUseCaseTest {
                     .willReturn(mockVideo);
 
             // when
-            VideoUploadResponse response = upScalingVideoUseCase.execute(largeFile, processingType, testMember);
+            VideoUploadResponse response = uploadVideoUseCase.execute(largeFile, processingType, testMember);
 
             // then
             assertThat(response).isNotNull();
@@ -158,7 +158,7 @@ class UpScalingVideoUseCaseTest {
 
             // when & then
             assertThatThrownBy(() -> 
-                upScalingVideoUseCase.execute(validVideoFile, processingType, testMember)
+                uploadVideoUseCase.execute(validVideoFile, processingType, testMember)
             )
             .isInstanceOf(VideoHandler.class)
             .hasMessage(expectedException.getMessage());
@@ -176,7 +176,7 @@ class UpScalingVideoUseCaseTest {
 
             // when & then
             assertThatThrownBy(() -> 
-                upScalingVideoUseCase.execute(null, processingType, testMember)
+                uploadVideoUseCase.execute(null, processingType, testMember)
             )
             .isInstanceOf(VideoHandler.class);
             
@@ -193,7 +193,7 @@ class UpScalingVideoUseCaseTest {
 
             // when & then
             assertThatThrownBy(() -> 
-                upScalingVideoUseCase.execute(validVideoFile, null, testMember)
+                uploadVideoUseCase.execute(validVideoFile, null, testMember)
             )
             .isInstanceOf(VideoHandler.class);
             
@@ -221,8 +221,8 @@ class UpScalingVideoUseCaseTest {
                     .willReturn(video2);
 
             // when
-            VideoUploadResponse response1 = upScalingVideoUseCase.execute(validVideoFile, processingType, user1);
-            VideoUploadResponse response2 = upScalingVideoUseCase.execute(validVideoFile, processingType, user2);
+            VideoUploadResponse response1 = uploadVideoUseCase.execute(validVideoFile, processingType, user1);
+            VideoUploadResponse response2 = uploadVideoUseCase.execute(validVideoFile, processingType, user2);
 
             // then
             assertThat(response1.getVideoId()).isEqualTo(1L);
@@ -248,8 +248,8 @@ class UpScalingVideoUseCaseTest {
                     .willReturn(video2);
 
             // when
-            VideoUploadResponse response1 = upScalingVideoUseCase.execute(file1, processingType, testMember);
-            VideoUploadResponse response2 = upScalingVideoUseCase.execute(file2, processingType, testMember);
+            VideoUploadResponse response1 = uploadVideoUseCase.execute(file1, processingType, testMember);
+            VideoUploadResponse response2 = uploadVideoUseCase.execute(file2, processingType, testMember);
 
             // then
             assertThat(response1.getVideoId()).isEqualTo(1L);

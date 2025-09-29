@@ -2,7 +2,7 @@ package com.example.echoshotx.presentation.video.controller;
 
 import com.example.echoshotx.application.video.usecase.GetVideoUseCase;
 import com.example.echoshotx.application.video.usecase.GetProcessedVideosUseCase;
-import com.example.echoshotx.application.video.usecase.UpScalingVideoUseCase;
+import com.example.echoshotx.application.video.usecase.UploadVideoUseCase;
 import com.example.echoshotx.domain.member.entity.Member;
 import com.example.echoshotx.domain.video.entity.ProcessingType;
 import com.example.echoshotx.presentation.video.dto.response.VideoUploadResponse;
@@ -27,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VideoController {
 
-    private final UpScalingVideoUseCase upScalingVideoUseCase;
+    private final UploadVideoUseCase uploadVideoUseCase;
     private final GetVideoUseCase getVideoUseCase;
     private final GetProcessedVideosUseCase getProcessedVideosUseCase;
 
@@ -38,8 +38,7 @@ public class VideoController {
             @RequestParam(value = "processingType", defaultValue = "BASIC_ENHANCEMENT") ProcessingType processingType,
             @CurrentMember Member member) {
 
-        VideoUploadResponse response = upScalingVideoUseCase.execute(file, member);
-
+        VideoUploadResponse response = uploadVideoUseCase.execute(file, processingType, member);
         return ApiResponseDto.onSuccess(response);
     }
 

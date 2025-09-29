@@ -13,15 +13,15 @@ import org.springframework.web.multipart.MultipartFile;
 @Slf4j
 @UseCase
 @RequiredArgsConstructor
-public class UpScalingVideoUseCase {
+public class UploadVideoUseCase {
 
     private final VideoService videoService;
 
     /**
      * 영상 업로드 및 AI 업스케일링 요청 처리
      */
-    public VideoUploadResponse execute(MultipartFile file, Member member) {
-        Video uploadedVideo = videoService.uploadVideo(file, member.getId(), ProcessingType.AI_UPSCALING);
+    public VideoUploadResponse execute(MultipartFile file, ProcessingType processingType, Member member) {
+        Video uploadedVideo = videoService.uploadVideo(file, member.getId(), processingType);
         return VideoUploadResponse.from(uploadedVideo);
     }
 
