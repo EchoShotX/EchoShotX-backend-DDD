@@ -1,6 +1,6 @@
 package com.example.echoshotx.infrastructure.service;
 
-import com.example.echoshotx.infrastructure.ai.dto.request.VideoProcessingRequest;
+import com.example.echoshotx.infrastructure.ai.dto.request.VideoUpScalingRequest;
 import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,16 +18,18 @@ import java.util.function.Supplier;
 public class AiServerClient {
     
     private final WebClient aiServerWebClient;
-    
+
+    private static final String UPSCALING_API_URL = "/api/video/process";
+
     /**
      * 영상 업스케일링 요청 (A영상 → C영상 변환)
      */
-    public Mono<VideoProcessingResponse> processVideo(VideoProcessingRequest request) {
+    public Mono<VideoProcessingResponse> processVideo(VideoUpScalingRequest request) {
         log.info("AI 서버 영상 업스케일링 요청 시작: videoId={}", request.getVideoId());
         
         Supplier<Mono<VideoProcessingResponse>> supplier = () ->
             aiServerWebClient.post()
-                .uri("/api/video/process")
+                .uri(UPSCALING_API_URL)
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(VideoProcessingResponse.class)
@@ -46,8 +48,6 @@ public class AiServerClient {
      * 영상 처리 상태 조회
      */
     public Mono<VideoProcessingResponse> getVideoProcessingStatus(Long videoId) {
-        log.debug("영상처리 상태 조회: videoId={}", videoId);
-        
         Supplier<Mono<VideoProcessingResponse>> supplier = () ->
             aiServerWebClient.get()
                 .uri("/api/video/status/{videoId}", videoId)

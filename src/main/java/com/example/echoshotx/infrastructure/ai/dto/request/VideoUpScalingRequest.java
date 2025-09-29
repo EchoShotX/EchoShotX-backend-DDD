@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class VideoProcessingRequest {
+public class VideoUpScalingRequest {
     
     private Long videoId;
     private String inputVideoUrl;

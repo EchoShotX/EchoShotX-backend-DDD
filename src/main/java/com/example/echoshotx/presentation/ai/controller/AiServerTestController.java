@@ -2,7 +2,7 @@ package com.example.echoshotx.presentation.ai.controller;
 
 import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.infrastructure.service.AiServerClient;
-import com.example.echoshotx.infrastructure.ai.dto.request.VideoProcessingRequest;
+import com.example.echoshotx.infrastructure.ai.dto.request.VideoUpScalingRequest;
 import com.example.echoshotx.infrastructure.ai.dto.response.VideoProcessingResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public class AiServerTestController {
             @RequestParam String processingType) {
         
         try {
-            VideoProcessingRequest request = VideoProcessingRequest.builder()
+            VideoUpScalingRequest request = VideoUpScalingRequest.builder()
                 .videoId(videoId)
                 .inputVideoUrl("https://example.com/test-video.mp4")
                 .outputPath("result/" + videoId + "/C_video.mp4")
@@ -74,8 +74,8 @@ public class AiServerTestController {
     /**
      * 테스트용 메타데이터 생성
      */
-    private VideoProcessingRequest.VideoMetadata createTestMetadata() {
-        return VideoProcessingRequest.VideoMetadata.builder()
+    private VideoUpScalingRequest.VideoMetadata createTestMetadata() {
+        return VideoUpScalingRequest.VideoMetadata.builder()
             .fileName("test-video.mp4")
             .fileSize(1024L * 1024 * 100) // 100MB
             .mimeType("video/mp4")
