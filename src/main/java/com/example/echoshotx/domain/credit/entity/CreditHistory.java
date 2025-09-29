@@ -36,7 +36,7 @@ public class CreditHistory extends BaseTimeEntity {
     private TransactionType transactionType;
 
     @Column(nullable = false)
-    private Integer amount;  // 항상 양수
+    private Integer amount;
 
     @Column(name = "video_id")
     private Long videoId;

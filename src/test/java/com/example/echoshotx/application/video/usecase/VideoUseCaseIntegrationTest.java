@@ -52,7 +52,7 @@ class VideoUseCaseIntegrationTest {
     @Mock
     private VideoValidator videoValidator;
 
-    private UploadVideoUseCase uploadVideoUseCase;
+    private UpScalingVideoUseCase upScalingVideoUseCase;
     private GetVideoUseCase getVideoUseCase;
     private GetProcessedVideosUseCase getProcessedVideosUseCase;
 
@@ -62,7 +62,7 @@ class VideoUseCaseIntegrationTest {
     @BeforeEach
     void setUp() {
         // UseCase 인스턴스 생성
-        uploadVideoUseCase = new UploadVideoUseCase(videoService);
+        upScalingVideoUseCase = new UpScalingVideoUseCase(videoService);
         getVideoUseCase = new GetVideoUseCase(videoAdaptor);
         getProcessedVideosUseCase = new GetProcessedVideosUseCase(videoAdaptor, awsS3Service);
 
@@ -96,7 +96,7 @@ class VideoUseCaseIntegrationTest {
                     .willReturn(uploadedVideo);
 
             // when - 1단계: 영상 업로드
-            VideoUploadResponse uploadResponse = uploadVideoUseCase.execute(
+            VideoUploadResponse uploadResponse = upScalingVideoUseCase.execute(
                     testVideoFile, ProcessingType.BASIC_ENHANCEMENT, testMember);
 
             // then - 업로드 검증
@@ -168,8 +168,8 @@ class VideoUseCaseIntegrationTest {
             given(videoAdaptor.queryById(2L)).willReturn(user2Video);
 
             // when - 동시 업로드
-            VideoUploadResponse user1Upload = uploadVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, user1);
-            VideoUploadResponse user2Upload = uploadVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, user2);
+            VideoUploadResponse user1Upload = upScalingVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, user1);
+            VideoUploadResponse user2Upload = upScalingVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, user2);
 
             // when - 동시 조회
             VideoDetailResponse user1Detail = getVideoUseCase.execute(1L, user1);
@@ -231,7 +231,7 @@ class VideoUseCaseIntegrationTest {
 
             // when & then - 업로드 실패 검증
             assertThatThrownBy(() -> 
-                uploadVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, testMember)
+                upScalingVideoUseCase.execute(testVideoFile, ProcessingType.BASIC_ENHANCEMENT, testMember)
             ).isInstanceOf(RuntimeException.class)
              .hasMessageContaining("S3 Upload Failed");
 

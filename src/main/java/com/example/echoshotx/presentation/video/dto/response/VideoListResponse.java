@@ -39,8 +39,11 @@ public class VideoListResponse {
                 .s3ThumbnailKey(video.getS3ThumbnailKey())
                 .uploadedAt(video.getCreatedDate())
                 .updatedAt(video.getLastModifiedDate())
-                .thumbnailUrl(video.getUrls().getThumbnailUrl())
 //                .urlExpiresAt(video.getUrls().getExpiresAt())
                 .build();
+    }
+
+    public void setThumbnailUrl(String thumbnailUrl) {
+        this.thumbnailUrl = thumbnailUrl;
     }
 }
