@@ -15,6 +15,7 @@ import java.util.function.Supplier;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+// 삭제 예정!!
 public class AiServerClient {
     
     private final WebClient aiServerWebClient;

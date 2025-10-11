@@ -365,7 +365,6 @@ public class Video extends BaseTimeEntity {
                 .fileSizeBytes(1024L * id)
                 .status(status)
                 .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .metadata(VideoMetadata.createForTest())
                 .videoUrls(VideoUrls.empty())
                 .build();
     }
@@ -394,7 +393,6 @@ public class Video extends BaseTimeEntity {
                 .fileSizeBytes(calculateFileSize(durationSeconds, width, height))
                 .status(status)
                 .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .metadata(VideoMetadata.createDetailedForTest(durationSeconds, width, height, "h264", 5000000L, 30.0))
                 .videoUrls(VideoUrls.empty())
                 .build();
     }
@@ -417,7 +415,6 @@ public class Video extends BaseTimeEntity {
                 .fileSizeBytes(fileSize)
                 .status(VideoStatus.UPLOADED)
                 .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .metadata(VideoMetadata.createEmptyForTest())
                 .videoUrls(VideoUrls.empty())
                 .build();
     }

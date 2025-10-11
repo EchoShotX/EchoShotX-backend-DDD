@@ -1,4 +1,7 @@
 spring:
+  profiles:
+    active:
+      - local
   datasource:
     url: jdbc:mysql://localhost:3306/{{ secrets.DATABASE_NAME }}?serverTimezone=UTC
     username: {{ secrets.DATABASE_USERNAME }}

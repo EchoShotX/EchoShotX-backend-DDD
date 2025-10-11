@@ -9,15 +9,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-/**
- * 영상의 모든 URL 정보를 담는 Value Object
- * 
- * 주요 특징:
- * 1. 불변 객체 (Immutable)
- * 2. 도메인 개념을 명확하게 표현
- * 3. URL 생성 실패 시에도 안전하게 처리
- * 4. JPA Embeddable로 Video 엔티티에 직접 임베드
- */
 @Embeddable
 @Getter
 @Builder
@@ -45,27 +36,6 @@ public class VideoUrls {
      */
     public boolean hasValidUrls() {
         return thumbnailUrl != null || streamingUrl != null || downloadUrl != null;
-    }
-    
-    /**
-     * 썸네일 URL이 유효한지 확인
-     */
-    public boolean hasThumbnailUrl() {
-        return thumbnailUrl != null;
-    }
-    
-    /**
-     * 스트리밍 URL이 유효한지 확인
-     */
-    public boolean hasStreamingUrl() {
-        return streamingUrl != null;
-    }
-    
-    /**
-     * 다운로드 URL이 유효한지 확인
-     */
-    public boolean hasDownloadUrl() {
-        return downloadUrl != null;
     }
 
     public VideoUrls updateThumbnailUrl(String thumbnailUrl) {
