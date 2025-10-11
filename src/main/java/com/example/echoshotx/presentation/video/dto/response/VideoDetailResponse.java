@@ -44,7 +44,6 @@ public class VideoDetailResponse {
                 .metadata(video.getMetadata())
                 .uploadedAt(video.getCreatedDate())
                 .updatedAt(video.getLastModifiedDate())
-                // Note: URL들은 UseCase에서 별도로 생성하여 설정해야 함
                 .build();
     }
 }

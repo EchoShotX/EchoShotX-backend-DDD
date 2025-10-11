@@ -276,7 +276,7 @@ class GetVideoUseCaseTest {
                     .status(VideoStatus.UPLOADED)
                     .processingType(ProcessingType.BASIC_ENHANCEMENT)
                     .metadata(null) // null 값
-                    .urls(null) // null 값
+                    .videoUrls(null) // null 값
                     .build();
 
             given(videoAdaptor.queryById(1L)).willReturn(partialVideo);
@@ -428,7 +428,7 @@ class GetVideoUseCaseTest {
                 .status(VideoStatus.UPLOADED)
                 .processingType(baseVideo.getProcessingType())
                 .metadata(baseVideo.getMetadata())
-                .urls(baseVideo.getUrls())
+                .videoUrls(baseVideo.getVideoUrls())
                 .build();
     }
 
