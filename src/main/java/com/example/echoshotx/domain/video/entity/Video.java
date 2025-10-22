@@ -132,6 +132,37 @@ public class Video extends BaseTimeEntity {
 
     // == factory methods ==
 
+    public static Video createForPresignedUpload(
+            Long memberId,
+            String fileName,
+            Long fileSizeBytes,
+            ProcessingType processingType,
+            String s3Key,
+            String uploadId,
+            LocalDateTime presignedUrlExpiresAt
+    ) {
+        // 도메인 규칙 검증
+        validatePresignedUploadRules(memberId, fileName, fileSizeBytes, s3Key, uploadId);
+
+        // VideoFile 생성 (아직 S3에 업로드 안됨)
+        VideoFile originalFile = VideoFile.builder()
+                .fileName(fileName)
+                .fileSizeBytes(fileSizeBytes)
+                .s3Key(s3Key)  // 예약된 S3 경로
+                .deletedAt(null)
+                .build();
+
+        return Video.builder()
+                .memberId(memberId)
+                .originalFile(originalFile)
+                .status(VideoStatus.PENDING_UPLOAD)
+                .processingType(processingType)
+                .uploadId(uploadId)
+                .presignedUrlExpiresAt(presignedUrlExpiresAt)
+                .retryCount(0)
+                .build();
+    }
+
 
     // ====
 
