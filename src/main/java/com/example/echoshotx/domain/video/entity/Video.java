@@ -112,6 +112,30 @@ public class Video extends BaseTimeEntity {
     private Integer retryCount = 0;
     // ====
 
+    // == presigned url ==
+    /**
+     * 업로드 추적 ID (UUID)
+     * Presigned URL 요청 시 생성되며, 업로드 완료 확인에 사용
+     */
+    @Column(name = "upload_id", unique = true)
+    private String uploadId;
+
+    //Presigned URL 만료 시간
+    @Column(name = "presigned_url_expires_at")
+    private LocalDateTime presignedUrlExpiresAt;
+
+    //업로드 완료 시간
+    @Column(name = "upload_completed_at")
+    private LocalDateTime uploadCompletedAt;
+
+    // ====
+
+    // == factory methods ==
+
+
+    // ====
+
+
     // business
     // 원본 파일 삭제
     public void markOriginalAsDeleted() {
@@ -142,4 +166,38 @@ public class Video extends BaseTimeEntity {
     //todo 크레딧 비용 계산
     //todo 비교 정보
 
+    // =======
+
+    // validate
+    private static void validatePresignedUploadRules(
+            Long memberId,
+            String fileName,
+            Long fileSizeBytes,
+            String s3Key,
+            String uploadId
+    ) {
+        if (memberId == null || memberId <= 0) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_MEMBER_ID);
+        }
+
+        if (fileName == null || fileName.trim().isEmpty()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_FILE_NAME);
+        }
+
+        if (fileSizeBytes == null || fileSizeBytes <= 0) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_EMPTY_FILE);
+        }
+
+        if (fileSizeBytes > 500 * 1024 * 1024) {  // todo 임시로 500MB 지정, 추후 변경 가능
+            throw new VideoHandler(VideoErrorStatus.VIDEO_FILE_TOO_LARGE);
+        }
+
+        if (s3Key == null || s3Key.trim().isEmpty()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_S3_KEY);
+        }
+
+        if (uploadId == null || uploadId.trim().isEmpty()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_S3_KEY);
+        }
+    }
 }
