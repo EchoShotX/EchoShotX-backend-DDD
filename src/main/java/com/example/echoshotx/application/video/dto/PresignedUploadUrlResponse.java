@@ -1,4 +1,4 @@
-package com.example.echoshotx.presentation.video.dto.response;
+package com.example.echoshotx.application.video.dto;
 
 import lombok.Builder;
 import lombok.Getter;

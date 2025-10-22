@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.HttpMethod;
 
+import com.example.echoshotx.application.video.dto.PresignedUploadUrlResponse;
 import com.example.echoshotx.infrastructure.aws.validator.S3Validator;
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
@@ -22,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.ZoneId;
 import java.util.*;
 
 @Slf4j
@@ -46,7 +48,7 @@ public class AwsS3Service {
     private static final int DOWNLOAD_URL_EXPIRATION = 1800;  // 30분
     private static final int THUMBNAIL_URL_EXPIRATION = 86400; // 24시간
 
-    public URL generateUploadUrl(String s3Key, String contentType, long contentLength) {
+    public PresignedUploadUrlResponse generateUploadUrl(String s3Key, String contentType, long contentLength) {
         S3Validator.validateUploadSize(contentLength);
         S3Validator.validateVideoContentType(contentType);
         try {
@@ -63,7 +65,16 @@ public class AwsS3Service {
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.setContentType(contentType);
             metadata.setContentLength(contentLength);
-            return amazonS3Client.generatePresignedUrl(request);
+            URL url = amazonS3Client.generatePresignedUrl(request);
+
+            return PresignedUploadUrlResponse.builder()
+                    .uploadUrl(url.toString())
+                    .s3Key(s3Key)
+                    .expiresAt(expiration.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .contentType(contentType)
+                    .maxSizeBytes(contentLength)
+                    .build();
+
         }catch (Exception e) {
             throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
         }
