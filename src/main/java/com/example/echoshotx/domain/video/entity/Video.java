@@ -83,7 +83,7 @@ public class Video extends BaseTimeEntity {
 
     // == 스트리밍 필드 ==
     //todo implement
-    // ===
+    // ====
 
     @Enumerated(EnumType.STRING)
     private VideoStatus status;
@@ -113,7 +113,6 @@ public class Video extends BaseTimeEntity {
     // ====
 
     // business
-
     // 원본 파일 삭제
     public void markOriginalAsDeleted() {
         if (this.status != VideoStatus.COMPLETED) {
@@ -126,5 +125,21 @@ public class Video extends BaseTimeEntity {
 
         this.originalFile = this.originalFile.markAsDeleted();
     }
+
+    // 원본 파일 존재 확인
+    public boolean hasOriginalFile() {
+        return this.originalFile != null && this.originalFile.exists();
+    }
+
+
+    // 다운로드 가능 여부 확인
+    public boolean isDownloadable() {
+        return this.status == VideoStatus.COMPLETED
+                && this.processedVideo != null
+                && this.processedVideo.exists();
+    }
+
+    //todo 크레딧 비용 계산
+    //todo 비교 정보
 
 }
