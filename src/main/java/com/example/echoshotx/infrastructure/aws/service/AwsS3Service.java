@@ -1,4 +1,4 @@
-package com.example.echoshotx.infrastructure.service;
+package com.example.echoshotx.infrastructure.aws.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -8,6 +8,7 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.HttpMethod;
 
+import com.example.echoshotx.infrastructure.aws.validator.S3Validator;
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +39,33 @@ public class AwsS3Service {
 
     private static final String S3_AWS_STATIC_PATH = "https://%s.s3.%s.amazonaws.com/";
     private static final String LOCAL_FILE_PATH = "src/main/resources/dump/";
-    
-    // Pre-signed URL 만료 시간 설정 (초 단위)
+
+    // Pre-signed URL 만료 시간 설정
+    private static final int UPLOAD_URL_EXPIRATION = 900; // 15분
     private static final int STREAMING_URL_EXPIRATION = 3600; // 1시간
     private static final int DOWNLOAD_URL_EXPIRATION = 1800;  // 30분
     private static final int THUMBNAIL_URL_EXPIRATION = 86400; // 24시간
+
+    public URL generateUploadUrl(String s3Key, String contentType, long contentLength) {
+        S3Validator.validateUploadSize(contentLength);
+        S3Validator.validateVideoContentType(contentType);
+
+        // 만료 시간 설정
+        Date expiration = new Date();
+        expiration.setTime(expiration.getTime() + UPLOAD_URL_EXPIRATION * 1000L);
+
+        // Presigned URL 생성
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                .withMethod(HttpMethod.PUT)
+                .withExpiration(expiration)
+                .withContentType(contentType);
+
+        ObjectMetadata metadata = new ObjectMetadata();
+        metadata.setContentType(contentType);
+        metadata.setContentLength(contentLength);
+
+        return amazonS3Client.generatePresignedUrl(request);
+    }
 
     public void deleteFile(String s3Key) {
         amazonS3Client.deleteObject(new DeleteObjectRequest(bucket, s3Key));
