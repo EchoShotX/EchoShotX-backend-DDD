@@ -49,22 +49,25 @@ public class AwsS3Service {
     public URL generateUploadUrl(String s3Key, String contentType, long contentLength) {
         S3Validator.validateUploadSize(contentLength);
         S3Validator.validateVideoContentType(contentType);
+        try {
+            // 만료 시간 설정
+            Date expiration = new Date();
+            expiration.setTime(expiration.getTime() + UPLOAD_URL_EXPIRATION * 1000L);
 
-        // 만료 시간 설정
-        Date expiration = new Date();
-        expiration.setTime(expiration.getTime() + UPLOAD_URL_EXPIRATION * 1000L);
+            // Presigned URL 생성
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                    .withMethod(HttpMethod.PUT)
+                    .withExpiration(expiration)
+                    .withContentType(contentType);
 
-        // Presigned URL 생성
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
-                .withMethod(HttpMethod.PUT)
-                .withExpiration(expiration)
-                .withContentType(contentType);
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(contentType);
+            metadata.setContentLength(contentLength);
+            return amazonS3Client.generatePresignedUrl(request);
+        }catch (Exception e) {
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
 
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentType(contentType);
-        metadata.setContentLength(contentLength);
-
-        return amazonS3Client.generatePresignedUrl(request);
     }
 
     public void deleteFile(String s3Key) {
@@ -72,6 +75,7 @@ public class AwsS3Service {
     }
 
     public String uploadVideo(MultipartFile video, String filePath) {
+
         validateVideoSize(video);
         validateVideoFileExtension(video.getOriginalFilename());
         String fileName = createVideoFileName(video);
