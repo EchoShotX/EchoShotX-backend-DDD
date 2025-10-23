@@ -1,6 +1,7 @@
 package com.example.echoshotx.domain.video.entity;
 
 import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
+import com.example.echoshotx.domain.member.entity.Member;
 import com.example.echoshotx.domain.video.exception.VideoErrorStatus;
 import com.example.echoshotx.domain.video.exception.VideoHandler;
 import com.example.echoshotx.domain.video.vo.ProcessedVideo;
@@ -229,6 +230,12 @@ public class Video extends BaseTimeEntity {
 
         if (uploadId == null || uploadId.trim().isEmpty()) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_S3_KEY);
+        }
+    }
+
+    public void validateMember(Member member) {
+        if (!this.memberId.equals(member.getId())) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_MEMBER_MISMATCH);
         }
     }
 }

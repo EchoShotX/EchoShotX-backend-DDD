@@ -8,15 +8,20 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Video 도메인의 입력 검증을 담당하는 Validator
- */
+
 @Component
 public class VideoValidator {
 
     // 파일 형식 및 크기 제한 상수
     private static final List<String> ALLOWED_VIDEO_EXTENSIONS = Arrays.asList(
             "mp4", "avi", "mov", "wmv", "flv", "mkv", "webm", "m4v"
+    );
+
+    private static final List<String> ALLOWED_CONTENT_TYPES = Arrays.asList(
+            "video/mp4",
+            "video/quicktime",
+            "video/x-msvideo",
+            "video/x-matroska"
     );
 
     // 수정 가능
@@ -48,6 +53,13 @@ public class VideoValidator {
             throw new VideoHandler(VideoErrorStatus.VIDEO_UNSUPPORTED_FORMAT);
         }
     }
+
+    public void validateContentType(String contentType) {
+        if (contentType == null || !ALLOWED_CONTENT_TYPES.contains(contentType.toLowerCase())) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_UNSUPPORTED_FORMAT);
+        }
+    }
+
 
     public void validateFileSize(long fileSizeBytes) {
         if (fileSizeBytes < MIN_FILE_SIZE_BYTES) {

@@ -17,7 +17,7 @@ public class GetVideoUseCase {
 
     public VideoDetailResponse execute(Long videoId, Member member) {
         Video video = videoAdaptor.queryById(videoId);
-        video.validateMember(member.getId());
+        video.validateMember(member);
 
         VideoDetailResponse response = VideoDetailResponse.from(video);
         

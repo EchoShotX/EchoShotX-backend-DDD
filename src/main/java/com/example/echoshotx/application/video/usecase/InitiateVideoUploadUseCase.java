@@ -3,8 +3,6 @@ package com.example.echoshotx.application.video.usecase;
 import com.example.echoshotx.application.video.dto.PresignedUploadUrlResponse;
 import com.example.echoshotx.domain.member.entity.Member;
 import com.example.echoshotx.domain.video.entity.Video;
-import com.example.echoshotx.domain.video.exception.VideoErrorStatus;
-import com.example.echoshotx.domain.video.exception.VideoHandler;
 import com.example.echoshotx.domain.video.service.VideoService;
 import com.example.echoshotx.infrastructure.annotation.usecase.UseCase;
 import com.example.echoshotx.infrastructure.aws.service.AwsS3Service;
@@ -16,8 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 @Slf4j
