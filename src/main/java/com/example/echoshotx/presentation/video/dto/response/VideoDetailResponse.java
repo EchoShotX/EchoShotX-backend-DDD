@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
+//todo 메타데이터 비교 정보
 public class VideoDetailResponse {
     
     private Long videoId;
@@ -34,14 +35,14 @@ public class VideoDetailResponse {
     public static VideoDetailResponse from(Video video) {
         return VideoDetailResponse.builder()
                 .videoId(video.getId())
-                .originalFileName(video.getOriginalFileName())
-                .s3OriginalKey(video.getS3OriginalKey())
-                .s3ProcessedKey(video.getS3ProcessedKey())
+                .originalFileName(video.getOriginalFile().getFileName())
+                .s3OriginalKey(video.getOriginalFile().getS3Key())
+                .s3ProcessedKey(video.getProcessedVideo().getS3Key())
                 .s3ThumbnailKey(video.getS3ThumbnailKey())
-                .fileSizeBytes(video.getFileSizeBytes())
+                .fileSizeBytes(video.getProcessedVideo().getFileSizeBytes())
                 .status(video.getStatus())
                 .processingType(video.getProcessingType())
-                .metadata(video.getMetadata())
+                .metadata(video.getProcessedMetadata())
                 .uploadedAt(video.getCreatedDate())
                 .updatedAt(video.getLastModifiedDate())
                 .build();

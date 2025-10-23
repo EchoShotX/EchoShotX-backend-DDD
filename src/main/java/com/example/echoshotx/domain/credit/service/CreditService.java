@@ -28,7 +28,7 @@ public class CreditService {
         Member member = memberAdaptor.queryById(memberId);
 
         // 필요 크레딧 계산
-        int requiredCredits = calculateRequiredCredits(processingType, video.getMetadata().getDurationSeconds());
+        int requiredCredits = calculateRequiredCredits(processingType, video.getOriginalMetadata().getDurationSeconds());
         
         // 회원 크레딧 차감
         member.useCredits(requiredCredits);
