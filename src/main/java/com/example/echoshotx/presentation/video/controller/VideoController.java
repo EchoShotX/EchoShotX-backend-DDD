@@ -1,12 +1,16 @@
 package com.example.echoshotx.presentation.video.controller;
 
 import com.example.echoshotx.application.video.usecase.GetVideoUseCase;
+import com.example.echoshotx.application.video.usecase.InitiateVideoUploadUseCase;
 import com.example.echoshotx.domain.member.entity.Member;
+import com.example.echoshotx.presentation.video.dto.request.InitiateUploadRequest;
+import com.example.echoshotx.presentation.video.dto.response.InitiateUploadResponse;
 import com.example.echoshotx.presentation.video.dto.response.VideoDetailResponse;
 import com.example.echoshotx.infrastructure.exception.payload.dto.ApiResponseDto;
 import com.example.echoshotx.infrastructure.security.aop.CurrentMember;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +22,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class VideoController {
 
+    // UseCases
+    private final InitiateVideoUploadUseCase initiateVideoUploadUseCase;
     private final GetVideoUseCase getVideoUseCase;
 
     @Operation(summary = "영상 조회", description = "영상 ID로 영상 정보를 조회합니다")
@@ -30,5 +36,18 @@ public class VideoController {
         return ApiResponseDto.onSuccess(response);
     }
 
+    @Operation(
+            summary = "영상 업로드 시작",
+            description = "영상 업로드를 위한 Presigned URL을 발급받습니다. " +
+                    "이 URL로 클라이언트가 직접 S3에 업로드합니다."
+    )
+    @PostMapping("/upload/initiate")
+    public ApiResponseDto<InitiateUploadResponse> initiateUpload(
+            @Valid @RequestBody InitiateUploadRequest request,
+            @CurrentMember Member member
+    ) {
+        InitiateUploadResponse response = initiateVideoUploadUseCase.execute(request, member);
+        return ApiResponseDto.onSuccess(response);
+    }
 
 }
