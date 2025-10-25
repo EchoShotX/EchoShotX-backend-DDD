@@ -1,18 +1,16 @@
 package com.example.echoshotx.domain.video.entity;
 
 import com.example.echoshotx.domain.auditing.entity.BaseTimeEntity;
+import com.example.echoshotx.domain.member.entity.Member;
 import com.example.echoshotx.domain.video.exception.VideoErrorStatus;
 import com.example.echoshotx.domain.video.exception.VideoHandler;
+import com.example.echoshotx.domain.video.vo.ProcessedVideo;
+import com.example.echoshotx.domain.video.vo.VideoFile;
 import com.example.echoshotx.domain.video.vo.VideoMetadata;
-import com.example.echoshotx.domain.video.vo.VideoUrls;
 
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 
@@ -36,21 +34,57 @@ public class Video extends BaseTimeEntity {
     @Column(name = "member_id", nullable = false)
     private Long memberId;
 
-    @Lob
-    @Column(nullable = false)
-    private String originalFileName;
+    // == 원본 영상 파일, 메타데이터 정보 ==
 
-    @Column(nullable = false)
-    private String s3OriginalKey;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "fileName", column = @Column(name = "original_file_name", nullable = false)),
+            @AttributeOverride(name = "fileSizeBytes", column = @Column(name = "original_file_size_bytes", nullable = false)),
+            @AttributeOverride(name = "s3Key", column = @Column(name = "s3_original_key")),
+            @AttributeOverride(name = "deletedAt", column = @Column(name = "original_deleted_at"))
+    })
+    private VideoFile originalFile;
 
-    @Column
-    private String s3ProcessedKey;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "durationSeconds", column = @Column(name = "original_duration_seconds")),
+            @AttributeOverride(name = "width", column = @Column(name = "original_width")),
+            @AttributeOverride(name = "height", column = @Column(name = "original_height")),
+            @AttributeOverride(name = "codec", column = @Column(name = "original_codec")),
+            @AttributeOverride(name = "bitrate", column = @Column(name = "original_bitrate")),
+            @AttributeOverride(name = "frameRate", column = @Column(name = "original_frame_rate"))
+    })
+    private VideoMetadata originalMetadata;
+    // ====
 
+    // == 처리된 영상 파일 정보 ==
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "s3Key", column = @Column(name = "s3_processed_key")),
+            @AttributeOverride(name = "fileSizeBytes", column = @Column(name = "processed_file_size_bytes"))
+    })
+    private ProcessedVideo processedVideo;
+    // ====
+
+    // == 처리된 영상 메타데이터 ==
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "durationSeconds", column = @Column(name = "processed_duration_seconds")),
+            @AttributeOverride(name = "width", column = @Column(name = "processed_width")),
+            @AttributeOverride(name = "height", column = @Column(name = "processed_height")),
+            @AttributeOverride(name = "codec", column = @Column(name = "processed_codec")),
+            @AttributeOverride(name = "bitrate", column = @Column(name = "processed_bitrate")),
+            @AttributeOverride(name = "frameRate", column = @Column(name = "processed_frame_rate"))
+    })
+    private VideoMetadata processedMetadata;
+
+    // ====
     @Column
     private String s3ThumbnailKey;
 
-    @Column(nullable = false)
-    private Long fileSizeBytes;
+    // == 스트리밍 필드 ==
+    //todo implement
+    // ====
 
     @Enumerated(EnumType.STRING)
     private VideoStatus status;
@@ -58,373 +92,150 @@ public class Video extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private ProcessingType processingType;
 
-    @Embedded
-    private VideoMetadata metadata;
+    // == ai 처리 ==
+    @Column(name = "sqs_message_id")
+    private String sqsMessageId;
 
-    // todo 추후 presigned 방식으로 변경
-    @Embedded
-    private VideoUrls videoUrls;
+    @Column(name = "ai_job_id")
+    private String aiJobId;
 
-    // AI 서버 연동 필드들
-    @Enumerated(EnumType.STRING)
-    @Column(name = "processing_status")
-    private ProcessingStatus processingStatus; // PROCESSING, SUCCEEDED, FAILED, CANCELLED
+    @Column(name = "processing_started_at")
+    private LocalDateTime processingStartedAt;
 
-    public static Video create(
+    @Column(name = "processing_completed_at")
+    private LocalDateTime processingCompletedAt;
+
+    @Column(name = "error_message", length = 1000)
+    private String errorMessage;
+
+    @Builder.Default
+    @Column(name = "retry_count")
+    private Integer retryCount = 0;
+    // ====
+
+    // == presigned url ==
+    /**
+     * 업로드 추적 ID (UUID)
+     * Presigned URL 요청 시 생성되며, 업로드 완료 확인에 사용
+     */
+    @Column(name = "upload_id", unique = true)
+    private String uploadId;
+
+    //Presigned URL 만료 시간
+    @Column(name = "presigned_url_expires_at")
+    private LocalDateTime presignedUrlExpiresAt;
+
+    //업로드 완료 시간
+    @Column(name = "upload_completed_at")
+    private LocalDateTime uploadCompletedAt;
+
+    // ====
+
+    // == factory methods ==
+
+    public static Video createForPresignedUpload(
             Long memberId,
-            MultipartFile file,
-            String s3Key,
+            String fileName,
+            Long fileSizeBytes,
             ProcessingType processingType,
-            VideoMetadata metadata
+            String s3Key,
+            String uploadId,
+            LocalDateTime presignedUrlExpiresAt
     ) {
-        // 핵심 도메인 규칙 검증
-        validateDomainRules(memberId, file, s3Key, processingType);
+        // 도메인 규칙 검증
+        validatePresignedUploadRules(memberId, fileName, fileSizeBytes, s3Key, uploadId);
+
+        // VideoFile 생성 (아직 S3에 업로드 안됨)
+        VideoFile originalFile = VideoFile.builder()
+                .fileName(fileName)
+                .fileSizeBytes(fileSizeBytes)
+                .s3Key(s3Key)  // 예약된 S3 경로
+                .deletedAt(null)
+                .build();
 
         return Video.builder()
                 .memberId(memberId)
-                .originalFileName(file.getOriginalFilename())
-                .s3OriginalKey(s3Key)
-                .fileSizeBytes(file.getSize())
-                .status(VideoStatus.UPLOADED)
+                .originalFile(originalFile)
+                .status(VideoStatus.PENDING_UPLOAD)
                 .processingType(processingType)
-                .metadata(metadata)
-//                .urls(VideoUrls.empty())
+                .uploadId(uploadId)
+                .presignedUrlExpiresAt(presignedUrlExpiresAt)
+                .retryCount(0)
                 .build();
     }
 
-    /**
-     * 핵심 도메인 규칙을 검증합니다
-     * 도메인이 항상 유효해야 한다는 원칙에 따라 필수적인 비즈니스 규칙을 검증
-     */
-    private static void validateDomainRules(Long memberId, MultipartFile file, String s3Key, ProcessingType processingType) {
-        // 필수 도메인 속성 검증
+
+    // ====
+
+
+    // business
+    // 원본 파일 삭제
+    public void markOriginalAsDeleted() {
+        if (this.status != VideoStatus.COMPLETED) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_NOT_COMPLETED);
+        }
+
+        if (this.processedVideo == null || !this.processedVideo.exists()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_PROCESSED_FILE_NOT_EXISTS);
+        }
+
+        this.originalFile = this.originalFile.markAsDeleted();
+    }
+
+    // 원본 파일 존재 확인
+    public boolean hasOriginalFile() {
+        return this.originalFile != null && this.originalFile.exists();
+    }
+
+
+    // 다운로드 가능 여부 확인
+    public boolean isDownloadable() {
+        return this.status == VideoStatus.COMPLETED
+                && this.processedVideo != null
+                && this.processedVideo.exists();
+    }
+
+    //todo 크레딧 비용 계산
+    //todo 비교 정보
+
+    // =======
+
+    // validate
+    private static void validatePresignedUploadRules(
+            Long memberId,
+            String fileName,
+            Long fileSizeBytes,
+            String s3Key,
+            String uploadId
+    ) {
         if (memberId == null || memberId <= 0) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_MEMBER_ID);
         }
 
-        if (file == null) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_NOT_FOUND);
+        if (fileName == null || fileName.trim().isEmpty()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_FILE_NAME);
+        }
+
+        if (fileSizeBytes == null || fileSizeBytes <= 0) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_EMPTY_FILE);
+        }
+
+        if (fileSizeBytes > 500 * 1024 * 1024) {  // todo 임시로 500MB 지정, 추후 변경 가능
+            throw new VideoHandler(VideoErrorStatus.VIDEO_FILE_TOO_LARGE);
         }
 
         if (s3Key == null || s3Key.trim().isEmpty()) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_S3_KEY);
         }
 
-        if (processingType == null) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_PROCESSING_TYPE);
-        }
-
-        // 파일 크기 0인 경우 (도메인 규칙)
-        if (file.getSize() == 0) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_EMPTY_FILE);
-        }
-
-        // 파일명이 null인 경우 (도메인 규칙)
-        if (file.getOriginalFilename() == null || file.getOriginalFilename().trim().isEmpty()) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_FILE_NAME);
+        if (uploadId == null || uploadId.trim().isEmpty()) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_S3_KEY);
         }
     }
 
-
-    public void validateMember(Long memberId) {
-        if (!this.memberId.equals(memberId)) {
+    public void validateMember(Member member) {
+        if (!this.memberId.equals(member.getId())) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_MEMBER_MISMATCH);
         }
     }
-
-    /**
-     * 영상에 대한 URL들을 생성합니다
-     *
-     * @param thumbnailUrl 썸네일 URL
-     * @param streamingUrl 스트리밍 URL
-     * @param downloadUrl  다운로드 URL
-     * @param expiresAt    URL 만료 시간
-     */
-    public void generateUrls(String thumbnailUrl, String streamingUrl, String downloadUrl, LocalDateTime expiresAt) {
-        this.videoUrls = VideoUrls.builder()
-                .thumbnailUrl(thumbnailUrl)
-                .streamingUrl(streamingUrl)
-                .downloadUrl(downloadUrl)
-                .expiresAt(expiresAt)
-                .build();
-    }
-
-    /**
-     * 영상에 대한 URL들을 생성합니다 (기본 만료 시간: 1시간)
-     *
-     * @param thumbnailUrl 썸네일 URL
-     * @param streamingUrl 스트리밍 URL
-     * @param downloadUrl  다운로드 URL
-     */
-    public void generateUrls(String thumbnailUrl, String streamingUrl, String downloadUrl) {
-        generateUrls(thumbnailUrl, streamingUrl, downloadUrl, LocalDateTime.now().plusHours(1));
-    }
-
-    /**
-     * URL들을 초기화합니다
-     */
-    public void clearUrls() {
-        this.videoUrls = VideoUrls.empty();
-    }
-
-    /**
-     * URL이 유효한지 확인합니다
-     */
-    public boolean hasValidUrls() {
-        return videoUrls != null && videoUrls.hasValidUrls();
-    }
-
-    /**
-     * URL이 만료되었는지 확인합니다
-     */
-    public boolean isUrlsExpired() {
-        return videoUrls == null || videoUrls.getExpiresAt() == null ||
-                videoUrls.getExpiresAt().isBefore(LocalDateTime.now());
-    }
-
-    /**
-     * URL을 갱신해야 하는지 확인합니다
-     */
-    public boolean needsUrlRefresh() {
-        return videoUrls == null || isUrlsExpired();
-    }
-
-    // ========== 도메인 비즈니스 규칙 ==========
-
-    /**
-     * 영상 상태를 변경합니다 (도메인 규칙 적용)
-     *
-     * @param newStatus 새로운 상태
-     * @throws IllegalStateException 상태 전환이 불가능한 경우
-     */
-    public void changeStatus(VideoStatus newStatus) {
-        if (newStatus == null) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS);
-        }
-
-        // 상태 전환 규칙 검증
-        validateStatusTransition(this.status, newStatus);
-
-        this.status = newStatus;
-    }
-
-    /**
-     * 상태 전환 규칙을 검증합니다
-     */
-    private void validateStatusTransition(VideoStatus currentStatus, VideoStatus newStatus) {
-        // 동일한 상태로의 전환은 허용하지 않음
-        if (currentStatus == newStatus) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_SAME_STATUS_TRANSITION);
-        }
-
-        // 상태 전환 규칙
-        switch (currentStatus) {
-            case UPLOADED:
-                if (newStatus != VideoStatus.PROCESSING && newStatus != VideoStatus.FAILED) {
-                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
-                }
-                break;
-            case PROCESSING:
-                if (newStatus != VideoStatus.PROCESSED && newStatus != VideoStatus.FAILED) {
-                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
-                }
-                break;
-            case PROCESSED:
-                if (newStatus == VideoStatus.UPLOADED || newStatus == VideoStatus.PROCESSING) {
-                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
-                }
-                break;
-            case FAILED:
-                if (newStatus != VideoStatus.PROCESSING) {
-                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
-                }
-                break;
-            case ARCHIVED:
-                if (newStatus != VideoStatus.PROCESSING) {
-                    throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
-                }
-                break;
-        }
-    }
-
-    /**
-     * 처리된 영상 키를 설정합니다 (도메인 규칙 적용)
-     *
-     * @param processedKey 처리된 영상의 S3 키
-     * @throws IllegalStateException 영상이 처리 완료 상태가 아닌 경우
-     */
-    public void setProcessedKey(String processedKey) {
-        if (this.status != VideoStatus.PROCESSED) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_NOT_PROCESSED_STATUS);
-        }
-
-        if (processedKey == null || processedKey.trim().isEmpty()) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_PROCESSED_KEY);
-        }
-
-        this.s3ProcessedKey = processedKey;
-    }
-
-    /**
-     * 썸네일 키를 설정합니다 (도메인 규칙 적용)
-     *
-     * @param thumbnailKey 썸네일의 S3 키
-     */
-    public void setThumbnailKey(String thumbnailKey) {
-        if (thumbnailKey != null && thumbnailKey.trim().isEmpty()) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_THUMBNAIL_KEY);
-        }
-
-        this.s3ThumbnailKey = thumbnailKey;
-    }
-
-    /**
-     * 영상이 다운로드 가능한 상태인지 확인합니다 (도메인 규칙)
-     *
-     * @return 다운로드 가능 여부
-     */
-    public boolean isDownloadable() {
-        return this.status == VideoStatus.PROCESSED &&
-                this.s3ProcessedKey != null &&
-                !this.s3ProcessedKey.trim().isEmpty();
-    }
-
-    /**
-     * 영상이 스트리밍 가능한 상태인지 확인합니다 (도메인 규칙)
-     *
-     * @return 스트리밍 가능 여부
-     */
-    public boolean isStreamable() {
-        return isDownloadable(); // 다운로드 가능하면 스트리밍도 가능
-    }
-
-    /**
-     * 영상이 재처리 가능한 상태인지 확인합니다 (도메인 규칙)
-     *
-     * @return 재처리 가능 여부
-     */
-    public boolean canReprocess() {
-        return this.status == VideoStatus.FAILED || this.status == VideoStatus.UPLOADED;
-    }
-
-    // ========== AI 서버 연동 메서드들 ==========
-
-    /**
-     * 영상처리 상태를 업데이트합니다
-     */
-    public void updateProcessingStatus(ProcessingStatus status) {
-        this.processingStatus = status;
-    }
-
-    /**
-     * 썸네일 URL을 업데이트합니다
-     */
-    public void updateThumbnailUrl(String thumbnailUrl) {
-        this.videoUrls = videoUrls.updateThumbnailUrl(thumbnailUrl);
-    }
-
-    /**
-     * AI 처리가 완료되었는지 확인합니다
-     */
-    public boolean isAiProcessingCompleted() {
-        return "SUCCEEDED".equals(this.processingStatus);
-    }
-
-    /**
-     * AI 처리가 실패했는지 확인합니다
-     */
-    public boolean isAiProcessingFailed() {
-        return "FAILED".equals(this.processingStatus);
-    }
-
-    // ========================================
-    // 테스트 전용 팩토리 메서드들
-    // ========================================
-
-    /**
-     * 테스트용 Video 인스턴스를 생성합니다
-     * <p>
-     * ⚠️  주의: 이 메서드는 테스트 목적으로만 사용해야 합니다
-     * - 도메인 규칙 검증을 우회합니다
-     * - 운영 코드에서는 절대 사용하지 마세요
-     *
-     * @param id       영상 ID
-     * @param memberId 회원 ID
-     * @param fileName 파일명
-     * @param status   영상 상태
-     * @return 테스트용 Video 인스턴스
-     */
-    public static Video createForTest(Long id, Long memberId, String fileName, VideoStatus status) {
-        return Video.builder()
-                .id(id)
-                .memberId(memberId)
-                .originalFileName(fileName)
-                .s3OriginalKey("originals/" + fileName)
-                .s3ProcessedKey(status == VideoStatus.PROCESSED ? "processed/" + fileName : null)
-                .s3ThumbnailKey(status == VideoStatus.PROCESSED ? "thumbnails/thumb_" + id + ".jpg" : null)
-                .fileSizeBytes(1024L * id)
-                .status(status)
-                .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .videoUrls(VideoUrls.empty())
-                .build();
-    }
-
-    /**
-     * 테스트용 상세 Video 인스턴스를 생성합니다 (메타데이터 포함)
-     *
-     * @param id              영상 ID
-     * @param memberId        회원 ID
-     * @param fileName        파일명
-     * @param status          영상 상태
-     * @param durationSeconds 영상 길이 (초)
-     * @param width           가로 해상도
-     * @param height          세로 해상도
-     * @return 테스트용 Video 인스턴스
-     */
-    public static Video createDetailedForTest(Long id, Long memberId, String fileName, VideoStatus status,
-                                              double durationSeconds, int width, int height) {
-        return Video.builder()
-                .id(id)
-                .memberId(memberId)
-                .originalFileName(fileName)
-                .s3OriginalKey("originals/" + fileName)
-                .s3ProcessedKey(status == VideoStatus.PROCESSED ? "processed/" + fileName : null)
-                .s3ThumbnailKey(status == VideoStatus.PROCESSED ? "thumbnails/thumb_" + id + ".jpg" : null)
-                .fileSizeBytes(calculateFileSize(durationSeconds, width, height))
-                .status(status)
-                .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .videoUrls(VideoUrls.empty())
-                .build();
-    }
-
-    /**
-     * 테스트용 최소한의 Video 인스턴스를 생성합니다 (업로드 직후 상태)
-     *
-     * @param memberId 회원 ID
-     * @param fileName 파일명
-     * @param fileSize 파일 크기
-     * @return 테스트용 Video 인스턴스
-     */
-    public static Video createUploadedForTest(Long memberId, String fileName, long fileSize) {
-        return Video.builder()
-                .memberId(memberId)
-                .originalFileName(fileName)
-                .s3OriginalKey("originals/" + fileName)
-                .s3ProcessedKey(null)
-                .s3ThumbnailKey(null)
-                .fileSizeBytes(fileSize)
-                .status(VideoStatus.UPLOADED)
-                .processingType(ProcessingType.BASIC_ENHANCEMENT)
-                .videoUrls(VideoUrls.empty())
-                .build();
-    }
-
-    /**
-     * 테스트용 파일 크기 계산 (추정값)
-     */
-    private static long calculateFileSize(double durationSeconds, int width, int height) {
-        // 간단한 추정: duration * resolution * compression_factor
-        return (long) (durationSeconds * width * height * 0.1);
-    }
-
 }

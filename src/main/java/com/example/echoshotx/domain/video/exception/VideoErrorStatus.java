@@ -37,7 +37,12 @@ public enum VideoErrorStatus implements BaseCode {
     // 입력 검증 관련 에러 (4320 ~ 4330)
     VIDEO_FILE_TOO_SMALL(BAD_REQUEST, 4320, "파일 크기가 너무 작습니다."),
     VIDEO_FILE_TOO_LARGE(BAD_REQUEST, 4321, "파일 크기가 너무 큽니다."),
-    VIDEO_EXTENSION_NOT_FOUND(BAD_REQUEST, 4322, "파일 확장자를 찾을 수 없습니다."),;
+    VIDEO_EXTENSION_NOT_FOUND(BAD_REQUEST, 4322, "파일 확장자를 찾을 수 없습니다."),
+
+    // 처리 에러 (4330 ~ 4340)
+    VIDEO_NOT_COMPLETED(BAD_REQUEST, 4330, "비디오 처리가 완료되지 않았습니다."),
+    VIDEO_PROCESSED_FILE_NOT_EXISTS(BAD_REQUEST, 4331, "처리된 비디오 파일이 존재하지 않습니다.")
+    ;
 
     private final HttpStatus httpStatus;
     private final Integer code;

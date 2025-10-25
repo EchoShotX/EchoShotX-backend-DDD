@@ -1,6 +1,5 @@
 package com.example.echoshotx.infrastructure.ai.dto.response;
 
-import com.example.echoshotx.domain.video.entity.ProcessingStatus;
 import com.example.echoshotx.domain.video.entity.ProcessingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +17,6 @@ public class VideoProcessingResponse {
     
     private Long videoId;
     private ProcessingType processingType;
-    private ProcessingStatus status;
     private String outputVideoUrl;
     private String thumbnailUrl;
     private ProcessingResult result;

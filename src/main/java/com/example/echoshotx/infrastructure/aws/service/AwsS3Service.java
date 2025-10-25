@@ -1,4 +1,4 @@
-package com.example.echoshotx.infrastructure.service;
+package com.example.echoshotx.infrastructure.aws.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -8,6 +8,9 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.HttpMethod;
 
+import com.example.echoshotx.application.video.dto.PresignedUploadUrlResponse;
+import com.example.echoshotx.domain.video.validator.VideoValidator;
+import com.example.echoshotx.infrastructure.aws.validator.S3Validator;
 import com.example.echoshotx.infrastructure.exception.object.domain.S3Handler;
 import com.example.echoshotx.infrastructure.exception.payload.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.time.ZoneId;
 import java.util.*;
 
 @Slf4j
@@ -38,17 +42,52 @@ public class AwsS3Service {
 
     private static final String S3_AWS_STATIC_PATH = "https://%s.s3.%s.amazonaws.com/";
     private static final String LOCAL_FILE_PATH = "src/main/resources/dump/";
-    
-    // Pre-signed URL 만료 시간 설정 (초 단위)
+
+    // Pre-signed URL 만료 시간 설정
+    private static final int UPLOAD_URL_EXPIRATION = 900; // 15분
     private static final int STREAMING_URL_EXPIRATION = 3600; // 1시간
     private static final int DOWNLOAD_URL_EXPIRATION = 1800;  // 30분
     private static final int THUMBNAIL_URL_EXPIRATION = 86400; // 24시간
+
+    public PresignedUploadUrlResponse generateUploadUrl(String s3Key, String contentType, long contentLength) {
+        S3Validator.validateUploadSize(contentLength);
+        S3Validator.validateVideoContentType(contentType);
+        try {
+            // 만료 시간 설정
+            Date expiration = new Date();
+            expiration.setTime(expiration.getTime() + UPLOAD_URL_EXPIRATION * 1000L);
+
+            // Presigned URL 생성
+            GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
+                    .withMethod(HttpMethod.PUT)
+                    .withExpiration(expiration)
+                    .withContentType(contentType);
+
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(contentType);
+            metadata.setContentLength(contentLength);
+            URL url = amazonS3Client.generatePresignedUrl(request);
+
+            return PresignedUploadUrlResponse.builder()
+                    .uploadUrl(url.toString())
+                    .s3Key(s3Key)
+                    .expiresAt(expiration.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                    .contentType(contentType)
+                    .maxSizeBytes(contentLength)
+                    .build();
+
+        } catch (Exception e) {
+            throw new S3Handler(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+
+    }
 
     public void deleteFile(String s3Key) {
         amazonS3Client.deleteObject(new DeleteObjectRequest(bucket, s3Key));
     }
 
     public String uploadVideo(MultipartFile video, String filePath) {
+
         validateVideoSize(video);
         validateVideoFileExtension(video.getOriginalFilename());
         String fileName = createVideoFileName(video);
@@ -167,6 +206,7 @@ public class AwsS3Service {
 
     /**
      * 영상 스트리밍을 위한 Pre-signed URL 생성
+     *
      * @param s3Key S3 객체 키
      * @return 스트리밍 가능한 Pre-signed URL
      */
@@ -174,14 +214,14 @@ public class AwsS3Service {
         try {
             Date expiration = new Date();
             expiration.setTime(expiration.getTime() + STREAMING_URL_EXPIRATION * 1000L);
-            
+
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
                     .withMethod(HttpMethod.GET)
                     .withExpiration(expiration);
-            
+
             URL url = amazonS3Client.generatePresignedUrl(request);
             log.info("Generated streaming URL for key: {}, expires: {}", s3Key, expiration);
-            
+
             return url.toString();
         } catch (Exception e) {
             log.error("Failed to generate streaming URL for key: {}", s3Key, e);
@@ -191,6 +231,7 @@ public class AwsS3Service {
 
     /**
      * 영상 다운로드를 위한 Pre-signed URL 생성
+     *
      * @param s3Key S3 객체 키
      * @return 다운로드 가능한 Pre-signed URL
      */
@@ -198,14 +239,14 @@ public class AwsS3Service {
         try {
             Date expiration = new Date();
             expiration.setTime(expiration.getTime() + DOWNLOAD_URL_EXPIRATION * 1000L);
-            
+
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
                     .withMethod(HttpMethod.GET)
                     .withExpiration(expiration);
-            
+
             URL url = amazonS3Client.generatePresignedUrl(request);
             log.info("Generated download URL for key: {}, expires: {}", s3Key, expiration);
-            
+
             return url.toString();
         } catch (Exception e) {
             log.error("Failed to generate download URL for key: {}", s3Key, e);
@@ -215,6 +256,7 @@ public class AwsS3Service {
 
     /**
      * 썸네일 이미지를 위한 Pre-signed URL 생성
+     *
      * @param s3Key S3 객체 키
      * @return 썸네일 표시용 Pre-signed URL
      */
@@ -222,13 +264,13 @@ public class AwsS3Service {
         try {
             Date expiration = new Date();
             expiration.setTime(expiration.getTime() + THUMBNAIL_URL_EXPIRATION * 1000L);
-            
+
             GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, s3Key)
                     .withMethod(HttpMethod.GET)
                     .withExpiration(expiration);
-            
+
             URL url = amazonS3Client.generatePresignedUrl(request);
-            
+
             return url.toString();
         } catch (Exception e) {
             log.error("Failed to generate thumbnail URL for key: {}", s3Key, e);
@@ -238,6 +280,7 @@ public class AwsS3Service {
 
     /**
      * S3 객체 존재 여부 확인
+     *
      * @param s3Key S3 객체 키
      * @return 존재 여부
      */
