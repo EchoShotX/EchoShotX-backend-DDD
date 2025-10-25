@@ -1,4 +1,4 @@
-package com.example.echoshotx.credit.application.usecase;
+package com.example.echoshotx.credit.application.service;
 
 import com.example.echoshotx.credit.domain.entity.CreditHistory;
 import com.example.echoshotx.credit.infrastructure.persistence.CreditHistoryRepository;
