@@ -31,6 +31,7 @@ spring:
             client-secret: {{ secrets.GOOGLE_CLIENT_SECRET }}
             scope:
               - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
           naver:
             client-id: {{ secrets.NAVER_CLIENT_ID }}
             client-secret: {{ secrets.NAVER_CLIENT_SECRET }}

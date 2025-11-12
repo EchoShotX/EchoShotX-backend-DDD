@@ -58,7 +58,7 @@ public class CustomOAuthUser implements OAuth2User, UserDetails {
 
     @Override
     public String getUsername() {
-        return member.getUsername();
+        return member.getId().toString();
     }
 
     @Override
