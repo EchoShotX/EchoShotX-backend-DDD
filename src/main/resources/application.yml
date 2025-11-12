@@ -92,8 +92,7 @@ cloud:
     credentials:
       access-key: {{ secrets.AWS_ACCESS_KEY }} # 환경변수 필요
       secret-key: {{ secrets.AWS_SECRET_KEY }} # 환경변수 필요
-    region:
-      static: ap-northeast-2
+    region: ap-northeast-2
     s3:
       bucket: {{ secrets.AWS_S3_BUCKET }} # 환경변수 필요
     sqs:
