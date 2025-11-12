@@ -1,4 +1,4 @@
-package com.example.echoshotx.shared.aws.service;
+package com.example.echoshotx.shared.aws.s3.service;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -9,7 +9,7 @@ import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.HttpMethod;
 
 import com.example.echoshotx.video.application.dto.PresignedUploadUrlResponse;
-import com.example.echoshotx.shared.aws.validator.S3Validator;
+import com.example.echoshotx.shared.aws.s3.validator.S3Validator;
 import com.example.echoshotx.shared.exception.object.domain.S3Handler;
 import com.example.echoshotx.shared.exception.payload.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;

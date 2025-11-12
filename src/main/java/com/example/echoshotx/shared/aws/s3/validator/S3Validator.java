@@ -1,4 +1,4 @@
-package com.example.echoshotx.shared.aws.validator;
+package com.example.echoshotx.shared.aws.s3.validator;
 
 import com.example.echoshotx.shared.exception.object.domain.S3Handler;
 import com.example.echoshotx.shared.exception.payload.code.ErrorStatus;

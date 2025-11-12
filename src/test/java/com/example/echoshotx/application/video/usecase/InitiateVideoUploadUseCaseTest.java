@@ -9,7 +9,7 @@ import com.example.echoshotx.video.domain.entity.Video;
 import com.example.echoshotx.video.domain.entity.VideoStatus;
 import com.example.echoshotx.video.application.service.VideoService;
 import com.example.echoshotx.video.domain.vo.VideoFile;
-import com.example.echoshotx.shared.aws.service.AwsS3Service;
+import com.example.echoshotx.shared.aws.s3.service.AwsS3Service;
 import com.example.echoshotx.video.presentation.dto.request.InitiateUploadRequest;
 import com.example.echoshotx.video.presentation.dto.response.InitiateUploadResponse;
 import org.junit.jupiter.api.BeforeEach;

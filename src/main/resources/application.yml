@@ -65,7 +65,7 @@ spring:
             user-name-attribute: id
 
 auth:
-  success-redirect-uri: "{baseUrl}/login/oauth2/callback"
+  success-redirect-uri: "{frontUrl}/login/oauth2/callback"
 
 # 서버 포트 설정 (기본 포트 변경 시)
 server:
@@ -96,6 +96,10 @@ cloud:
       static: ap-northeast-2
     s3:
       bucket: {{ secrets.AWS_S3_BUCKET }} # 환경변수 필요
+    sqs:
+      queue-url: {{ secrets.AWS_SQS_QUEUE_URL }} # 환경변수 필요
+      fifo: true
+      message-group-id: {{ secrets.AWS_SQS_MESSAGE_GROUP_ID }} # 환경변수 필요
 
 # AI 서버 설정
 ai:
