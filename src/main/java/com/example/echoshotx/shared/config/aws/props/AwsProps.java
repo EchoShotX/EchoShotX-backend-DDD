@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 @Configuration
 @ConfigurationProperties(prefix = "cloud.aws")
-public class AppAwsProps {
+public class AwsProps {
     private String region;
     private Sqs sqs;
 

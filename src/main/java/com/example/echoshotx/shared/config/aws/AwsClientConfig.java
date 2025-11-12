@@ -1,6 +1,6 @@
 package com.example.echoshotx.shared.config.aws;
 
-import com.example.echoshotx.shared.config.aws.props.AppAwsProps;
+import com.example.echoshotx.shared.config.aws.props.AwsProps;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 @RequiredArgsConstructor
 public class AwsClientConfig {
 
-    private final AppAwsProps awsProps;
+    private final AwsProps awsProps;
 
     @Bean
     public SqsClient sqsClient() {
