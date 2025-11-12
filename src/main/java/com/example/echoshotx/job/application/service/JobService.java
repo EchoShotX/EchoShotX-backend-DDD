@@ -2,6 +2,7 @@ package com.example.echoshotx.job.application.service;
 
 import com.example.echoshotx.job.application.adaptor.JobAdaptor;
 import com.example.echoshotx.job.domain.entity.Job;
+import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.job.infrastructure.publisher.JobPublisher;
 import com.example.echoshotx.member.domain.entity.Member;
 import lombok.RequiredArgsConstructor;
@@ -22,5 +23,8 @@ public class JobService {
         Job job = Job.create(s3Key, taskType);
         jobAdaptor.saveJob(job);
 
+        JobMessage jobMessage = JobMessage.builder().build();
+        jobPublisher.send(jobMessage);
     }
+
 }
