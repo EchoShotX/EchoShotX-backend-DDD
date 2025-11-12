@@ -15,8 +15,6 @@ public class CreateJobUseCase {
     private final JobService jobService;
 
     public void execute(Member member, JobRequest.Create request) {
-
-
-//        return
+        jobService.createAndPublishJob(member, request.getS3Key(), request.getTaskType());
     }
 }

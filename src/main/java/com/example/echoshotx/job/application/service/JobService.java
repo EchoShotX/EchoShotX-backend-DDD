@@ -19,11 +19,15 @@ public class JobService {
     private final JobAdaptor jobAdaptor;
     private final JobPublisher jobPublisher;
 
-    public Long createAndPublishJob(Member member, String s3Key, String taskType) {
-        Job job = Job.create(s3Key, taskType);
-        jobAdaptor.saveJob(job);
+    public void createAndPublishJob(Member member, String s3Key, String taskType) {
+        Job job = jobAdaptor.saveJob(Job.create(s3Key, taskType));
+        JobMessage jobMessage = JobMessage.builder()
+                .jobId(job.getId())
+                .taskType(taskType)
+                .memberId(member.getId())
+                .s3Key(s3Key)
+                .build();
 
-        JobMessage jobMessage = JobMessage.builder().build();
         jobPublisher.send(jobMessage);
     }
 

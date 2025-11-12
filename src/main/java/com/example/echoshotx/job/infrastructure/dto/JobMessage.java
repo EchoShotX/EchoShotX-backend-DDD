@@ -9,7 +9,11 @@ import lombok.ToString;
 @Builder
 public class JobMessage {
 
-    private final String jobId;
+    /**
+     * Job pk
+     */
+    private final Long jobId;
+
     /**
      * 업스케일 대상이 되는 S3 오브젝트 키
      * 예) uploads/videos/2025/11/10/abc.mp4
@@ -24,5 +28,5 @@ public class JobMessage {
     /**
      * 작업을 요청한 사용자 ID
      */
-    private final String userId;
+    private final Long memberId;
 }

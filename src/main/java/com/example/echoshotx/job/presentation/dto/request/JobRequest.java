@@ -10,6 +10,7 @@ public class JobRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Create {
+        // 영상 관련 메타데이터 추가 가능
         private String s3Key;
         private String taskType;
     }
