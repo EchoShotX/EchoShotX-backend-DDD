@@ -16,7 +16,7 @@ import lombok.experimental.SuperBuilder;
         name = "member",
         indexes = {
                 @Index(name = "idx_member_username", columnList = "username"),
-                @Index(name = "idx_member_nickname", columnList = "nickname"),
+//                @Index(name = "idx_member_nickname", columnList = "nickname"),
         }
 )
 public class Member extends BaseTimeEntity {
@@ -32,8 +32,8 @@ public class Member extends BaseTimeEntity {
     @Column(nullable = false, unique = true)
     private String username;
 
-    @Column(nullable = false, unique = true)
-    private String nickname;
+//    @Column(nullable = false, unique = true)
+//    private String nickname;
 
     private String email;
 

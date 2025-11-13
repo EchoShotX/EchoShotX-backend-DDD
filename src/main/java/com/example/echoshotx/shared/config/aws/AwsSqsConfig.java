@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -25,7 +26,7 @@ public class AwsSqsConfig {
     public SqsClient sqsClient() {
         return SqsClient.builder()
                 .region(Region.of(awsProps.getRegion()))
-                .credentialsProvider(DefaultCredentialsProvider.create())
+                .credentialsProvider(sqsCredentialsProvider())
                 .build();
     }
 
@@ -33,11 +34,7 @@ public class AwsSqsConfig {
     public SqsAsyncClient sqsAsyncClient() {
         return SqsAsyncClient.builder()
                 .region(Region.of(awsProps.getRegion()))
-                .credentialsProvider(StaticCredentialsProvider.create(
-                        AwsBasicCredentials.create(
-                                awsProps.getCredentials().getAccessKey(),
-                                awsProps.getCredentials().getSecretKey())
-                ))
+                .credentialsProvider(sqsCredentialsProvider())
                 .build();
     }
 
@@ -60,6 +57,15 @@ public class AwsSqsConfig {
                 )
                 .sqsAsyncClient(sqsAsyncClient())
                 .build();
+    }
+
+    private AwsCredentialsProvider sqsCredentialsProvider() {
+        return StaticCredentialsProvider.create(
+                AwsBasicCredentials.create(
+                        awsProps.getCredentials().getAccessKey(),
+                        awsProps.getCredentials().getSecretKey()
+                )
+        );
     }
 
 }

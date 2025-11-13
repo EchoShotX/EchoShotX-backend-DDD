@@ -18,7 +18,7 @@ import lombok.experimental.SuperBuilder;
     name = "credit_history",
     indexes = {
         @Index(name = "idx_credit_history_member_id", columnList = "member_id"),
-        @Index(name = "idx_credit_history_created_at", columnList = "created_at"),
+        @Index(name = "idx_credit_history_created_date", columnList = "created_date"),
         @Index(name = "idx_credit_history_transaction_type", columnList = "transaction_type")
     }
 )

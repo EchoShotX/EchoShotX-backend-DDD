@@ -66,10 +66,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private Member signupSocialMember(String username, String email) {
-        String nickname = "TEMP_" + UUID.randomUUID().toString().substring(0, 8); // 임시 닉네임 생성
+//        String nickname = "TEMP_" + UUID.randomUUID().toString().substring(0, 8); // 임시 닉네임 생성
         Member member = Member.builder()
                 .username(username)
-                .nickname(nickname)
+//                .nickname(nickname)
                 .email(email)
                 .role(Role.USER)
                 .build();
