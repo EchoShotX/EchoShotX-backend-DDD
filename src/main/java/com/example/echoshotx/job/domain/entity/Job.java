@@ -21,9 +21,15 @@ public class Job extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
+    @Column(name = "member_id")
+    private Long memberId;
+
+    @Column(name = "video_id")
+    private Long videoId;
+
     private String taskType;
 
-    public static Job create(String s3Key, String taskType) {
+    public static Job create(Long memberId, Long videoId, String s3Key, String taskType) {
         return Job.builder()
                 .s3Key(s3Key)
                 .taskType(taskType)
@@ -33,5 +39,9 @@ public class Job extends BaseTimeEntity {
 
     public void markPublished() {
         this.status = JobStatus.PUBLISHED;
+    }
+
+    public void markFailed() {
+        this.status = JobStatus.FAILED;
     }
 }

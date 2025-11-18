@@ -29,4 +29,9 @@ public class JobMessage {
      * 작업을 요청한 사용자 ID
      */
     private final Long memberId;
+
+    /**
+     * 비디오 ID
+     */
+    private final Long videoId;
 }

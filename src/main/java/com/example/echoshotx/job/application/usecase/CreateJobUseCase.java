@@ -15,6 +15,6 @@ public class CreateJobUseCase {
     private final JobService jobService;
 
     public void execute(Member member, JobRequest.Create request) {
-        jobService.createAndPublishJob(member, request.getS3Key(), request.getTaskType());
+        jobService.createAndPublishJob(member, request.getVideoId(), request.getS3Key(), request.getTaskType());
     }
 }

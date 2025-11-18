@@ -1,15 +1,20 @@
 package com.example.echoshotx.job.infrastructure.publisher;
 
+import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.shared.config.aws.props.AwsProps;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Recover;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SqsException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +27,43 @@ public class JobPublisher {
     private final SqsClient sqsClient;
     private final AwsProps awsProps;
     private final ObjectMapper objectMapper;
+
+    //service
+    private final JobService jobService;
+
+    @Retryable(
+            value = { SqsException.class, RuntimeException.class },
+            maxAttempts = 3, // 최대 3번 시도
+            backoff = @Backoff(delay = 500L, multiplier = 2.0) //재시도 0.5초 시도, 이후 2배씩 늘어남
+    )
+    public void sendWithRetry(JobMessage message) {
+        try {
+            send(message);
+        } catch (SqsException e) {
+            log.warn("SQS send failed (SqsException). jobId={}, taskType={}, message={}",
+                    message.getJobId(), message.getTaskType(), e.getMessage());
+            throw e;
+        } catch (RuntimeException e) {
+            log.warn("SQS send failed (RuntimeException). jobId={}, taskType={}, message={}",
+                    message.getJobId(), message.getTaskType(), e.getMessage());
+            throw e;
+        }
+    }
+
+    // 전부 실패했을 때 후처리
+    @Recover
+    public void recover(RuntimeException e, JobMessage message) {
+        log.error("SQS send permanently failed after retries. jobId={}", message.getJobId(), e);
+
+        // 실패한 job 상태 업데이트
+        jobService.markSendFailed(message.getJobId());
+
+        // 추가로 구현할 수 있는 것들
+        // 1. 슬랙/이메일 알람
+        // 아래는 리팩토링 가능한 것들
+        // 1. 큐에 기록 → 나중에 수동 재처리
+
+    }
 
     public void send(JobMessage message) {
         String body = generateMessageBody(message);
