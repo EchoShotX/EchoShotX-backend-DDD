@@ -39,7 +39,7 @@ public final class CustomAuthenticationPrincipalArgumentResolver implements Hand
             throw new RuntimeException();
         }
         findMethodAnnotation(CurrentMember.class, parameter);
-        return memberAdaptor.queryByUsername(authentication.getName());
+        return memberAdaptor.queryById(Long.parseLong(authentication.getName()));
     }
 
     private <T extends Annotation> T findMethodAnnotation(Class<T> annotationClass, MethodParameter parameter) {

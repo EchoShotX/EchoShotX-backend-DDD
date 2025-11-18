@@ -61,8 +61,10 @@ public class TokenService {
 
         // 새로운 Authentication 객체 생성
         Claims claims = parseClaims(refreshToken);
-        String username = claims.getSubject();
-        CustomUserDetails customUserDetails = new CustomUserDetails(memberAdaptor.queryByUsername(username));
+        String memberId = claims.getSubject(); // 실제로는 memberId임
+        CustomUserDetails customUserDetails = new CustomUserDetails(memberAdaptor.queryById(
+                Long.parseLong(memberId)
+        ));
         Authentication authentication = new UsernamePasswordAuthenticationToken(customUserDetails, "",
                 customUserDetails.getAuthorities());
 

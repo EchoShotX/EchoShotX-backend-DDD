@@ -1,12 +1,14 @@
 package com.example.echoshotx.shared.security.vo;
 
 import com.example.echoshotx.member.domain.entity.Member;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
-
+@Getter
 public class CustomUserDetails implements UserDetails {
     private final Member member;
 
@@ -26,7 +28,7 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public String getUsername() {
-        return member.getUsername();
+        return String.valueOf(member.getId()); // memberId 반환
     }
 
     @Override

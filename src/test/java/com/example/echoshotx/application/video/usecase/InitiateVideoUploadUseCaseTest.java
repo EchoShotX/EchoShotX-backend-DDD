@@ -9,7 +9,7 @@ import com.example.echoshotx.video.domain.entity.Video;
 import com.example.echoshotx.video.domain.entity.VideoStatus;
 import com.example.echoshotx.video.application.service.VideoService;
 import com.example.echoshotx.video.domain.vo.VideoFile;
-import com.example.echoshotx.shared.aws.service.AwsS3Service;
+import com.example.echoshotx.shared.aws.s3.service.AwsS3Service;
 import com.example.echoshotx.video.presentation.dto.request.InitiateUploadRequest;
 import com.example.echoshotx.video.presentation.dto.response.InitiateUploadResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,7 +63,7 @@ class InitiateVideoUploadUseCaseTest {
         testMember = Member.builder()
                 .id(1L)
                 .username("testuser@example.com")
-                .nickname("테스트유저")
+//                .nickname("테스트유저")
                 .email("testuser@example.com")
                 .role(Role.USER)
                 .currentCredits(1000)
@@ -269,7 +269,7 @@ class InitiateVideoUploadUseCaseTest {
             Member anotherMember = Member.builder()
                     .id(2L)
                     .username("another@example.com")
-                    .nickname("다른유저")
+//                    .nickname("다른유저")
                     .role(Role.USER)
                     .currentCredits(1000)
                     .build();
