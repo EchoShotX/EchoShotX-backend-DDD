@@ -1,6 +1,8 @@
 package com.example.echoshotx.job.application.service;
 
 import com.example.echoshotx.job.application.adaptor.JobAdaptor;
+import com.example.echoshotx.job.application.event.JobCreatedEvent;
+import com.example.echoshotx.job.application.handler.JobEventHandler;
 import com.example.echoshotx.job.domain.entity.Job;
 import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.job.infrastructure.publisher.JobPublisher;
@@ -17,19 +19,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class JobService {
 
     private final JobAdaptor jobAdaptor;
-    private final JobPublisher jobPublisher;
+    private final JobEventHandler jobEventHandler;
 
     public void createAndPublishJob(Member member, Long videoId, String s3Key, String taskType) {
         Job job = jobAdaptor.saveJob(Job.create(member.getId(), videoId, s3Key, taskType));
-        JobMessage jobMessage = JobMessage.builder()
+        JobCreatedEvent event = JobCreatedEvent.builder()
                 .jobId(job.getId())
                 .videoId(videoId)
                 .taskType(taskType)
                 .memberId(member.getId())
                 .s3Key(s3Key)
                 .build();
-
-        jobPublisher.send(jobMessage);
+        jobEventHandler.handleCreate(event);
     }
 
     public void markSendFailed(Long jobId) {
