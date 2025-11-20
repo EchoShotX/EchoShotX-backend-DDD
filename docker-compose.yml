@@ -60,7 +60,13 @@ services:
       # .env의 AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_REGION 사용
       - CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${AWS_ACCESS_KEY}
       - CLOUD_AWS_CREDENTIALS_SECRET_KEY=${AWS_SECRET_KEY}
-      - CLOUD_AWS_REGION_STATIC=${AWS_REGION}
+      - CLOUD_AWS_REGION=${AWS_REGION}
+
+      # -------------------- SQS --------------------
+      # .env의 AWS_SQS_QUEUE_URL, AWS_SQS_MESSAGE_GROUP_ID 사용
+      - CLOUD_AWS_SQS_QUEUE_URL=${AWS_SQS_QUEUE_URL}
+      - CLOUD_AWS_SQS_MESSAGE_GROUP_ID=${AWS_SQS_MESSAGE_GROUP_ID}
+      - CLOUD_AWS_SQS_FIFO=true
 
       # -------------------- AWS S3 Buckets --------------------
       # .env의 S3_BUCKET 사용 (영상 저장용)

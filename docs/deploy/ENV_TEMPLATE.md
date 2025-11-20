@@ -1,6 +1,8 @@
 # ============================================
-# KoSpot Backend - Production Environment
+# EchoShotX Backend - Production Environment
 # ============================================
+
+
 
 # -------------------- Database (RDS) --------------------
 DB_HOST= RDS_ENDPOINT
@@ -30,13 +32,18 @@ AWS_ACCESS_KEY=
 AWS_SECRET_KEY=
 AWS_REGION=ap-northeast-2
 
+# -------------------- SQS Queues --------------------
+AWS_SQS_QUEUE_URL=
+AWS_SQS_MESSAGE_GROUP_ID=KoSpotGroup <- 임의 값
+
+주의사항: AWS 계정과 SQS 생성자 동일이어야함
+
 # -------------------- AWS S3 Buckets --------------------
 # 영상 저장용 버킷 이름
 S3_BUCKET=
 
 # -------------------- Application --------------------
 SERVER_PORT=8080
-# SPRING_PROFILES_ACTIVE=prod
 
 # -------------------- WebSocket --------------------
 WEBSOCKET_ALLOWED_ORIGINS= 필요한 경우 입력
