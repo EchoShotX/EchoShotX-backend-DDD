@@ -75,7 +75,6 @@ class CompleteVideoUploadUseCaseTest {
 		Member.builder()
 			.id(1L)
 			.username("testuser@example.com")
-			.nickname("테스트유저")
 			.email("testuser@example.com")
 			.role(Role.USER)
 			.currentCredits(1000)
