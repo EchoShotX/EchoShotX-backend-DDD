@@ -9,11 +9,26 @@
 
 
 # -------------------- Database (RDS) --------------------
-DB_HOST= RDS_ENDPOINT
+# DB_HOST= RDS_ENDPOINT
+# DB_PORT=3306
+# DB_NAME=RDS_DB_NAME
+# DB_USERNAME=DB_USERNAME
+# DB_PASSWORD=DB_PASSWORD
+
+# -------------------- Local MySQL on EC2 (Ubuntu)
+# 도커 컨테이너가 EC2 호스트에서 실행 중인 MySQL에 접속하게 하려면 아래처럼 설정합니다.
+# `scripts/after_install.sh`가 MySQL 설치/설정, `extra_hosts`가 호스트 연결을 담당합니다.
+DB_HOST=host.docker.internal
 DB_PORT=3306
-DB_NAME=RDS_DB_NAME
-DB_USERNAME=DB_USERNAME
-DB_PASSWORD=DB_PASSWORD
+DB_NAME=echoshotx
+DB_USERNAME=echoshotx
+DB_PASSWORD=1234
+
+# `scripts/after_install.sh`에서 Ubuntu용 MySQL 서버를 설치/구동하고 `bind-address=0.0.0.0`로 설정합니다.
+# `docker-compose.yml`의 `extra_hosts` 항목이 컨테이너에서 `host.docker.internal` 이름으로 EC2의 MySQL에 닿게 해줍니다.
+
+
+
 
 # -------------------- Redis --------------------
 REDIS_HOST=redis
@@ -51,16 +66,4 @@ SERVER_PORT=8080
 
 # -------------------- WebSocket --------------------
 WEBSOCKET_ALLOWED_ORIGINS= 필요한 경우 입력
-
-# -------------------- Local MySQL on EC2 (Ubuntu)
-# 도커 컨테이너가 EC2 호스트에서 실행 중인 MySQL에 접속하게 하려면 아래처럼 설정합니다.
-# `scripts/after_install.sh`가 MySQL 설치/설정, `extra_hosts`가 호스트 연결을 담당합니다.
-DB_HOST=host.docker.internal
-DB_PORT=3306
-DB_NAME=echoshotx
-DB_USERNAME=echoshotx
-DB_PASSWORD=변경할_비밀번호
-
-# `scripts/after_install.sh`에서 Ubuntu용 MySQL 서버를 설치/구동하고 `bind-address=0.0.0.0`로 설정합니다.
-# `docker-compose.yml`의 `extra_hosts` 항목이 컨테이너에서 `host.docker.internal` 이름으로 EC2의 MySQL에 닿게 해줍니다.
 
