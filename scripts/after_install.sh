@@ -4,15 +4,78 @@ echo "=========================================="
 echo "Running after install script..."
 echo "=========================================="
 
-# 프로젝트 디렉토리로 이동
-cd /home/ubuntu/echoshotx
+ROOT_DIR="/home/ubuntu/echoshotx"
 
-# 환경변수 파일 확인
-if [ ! -f .env ]; then
-    echo "❌ ERROR: .env file not found!"
-    echo "Please create .env file with required environment variables"
+resolve_env_file() {
+    local base_dir="$1"
+    local candidates=(
+        "${base_dir}/.env"
+        "${base_dir}/EchoShotX-backend-private/.env"
+    )
+
+    for env_path in "${candidates[@]}"; do
+        if [ -f "$env_path" ]; then
+            echo "$env_path"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+# 프로젝트 디렉토리로 이동
+cd "$ROOT_DIR"
+
+ENV_FILE=$(resolve_env_file "$ROOT_DIR")
+
+if [ -z "$ENV_FILE" ]; then
+    echo "❌ ERROR: .env file not found at $ROOT_DIR/.env or $ROOT_DIR/EchoShotX-backend-private/.env"
+    echo "Please supply the required environment file (it can live in the private submodule)"
     exit 1
 fi
+
+# 환경변수를 임시로 로드 (MySQL 설치/설정에 사용)
+set -o allexport
+. "$ENV_FILE"
+set +o allexport
+
+install_local_mysql() {
+    if [ -z "$DB_NAME" ] || [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ]; then
+        echo "❌ ERROR: DB_NAME/DB_USERNAME/DB_PASSWORD must be set for local MySQL setup"
+        exit 1
+    fi
+
+    if ! command -v mysql >/dev/null 2>&1; then
+        echo "Installing MySQL server (Ubuntu)..."
+        apt-get update
+        DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
+    else
+        echo "✅ MySQL already installed"
+    fi
+
+    MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
+    if [ -f "$MY_CNF" ]; then
+        if grep -q "^bind-address" "$MY_CNF"; then
+            sed -i "s/^bind-address\\s*=\\s*.*/bind-address = 0.0.0.0/" "$MY_CNF"
+        else
+            echo "bind-address = 0.0.0.0" >> "$MY_CNF"
+        fi
+    fi
+
+    systemctl enable --now mysql
+
+    db_user_escaped=${DB_USERNAME//\'/\'\'}
+    db_password_escaped=${DB_PASSWORD//\'/\'\'}
+
+    echo "Configuring database ${DB_NAME} and user ${DB_USERNAME}..."
+    mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    mysql -u root -e "CREATE USER IF NOT EXISTS '${db_user_escaped}'@'%' IDENTIFIED BY '${db_password_escaped}';"
+    mysql -u root -e "ALTER USER '${db_user_escaped}'@'%' IDENTIFIED BY '${db_password_escaped}';"
+    mysql -u root -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${db_user_escaped}'@'%';"
+    mysql -u root -e "FLUSH PRIVILEGES;"
+}
+
+install_local_mysql
 
 # Docker 이미지 로드
 if [ -f echoshotx-backend.tar ]; then

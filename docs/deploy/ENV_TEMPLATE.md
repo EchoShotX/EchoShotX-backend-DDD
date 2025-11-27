@@ -2,6 +2,10 @@
 # EchoShotX Backend - Production Environment
 # ============================================
 
+# `.env`는 다음 위치에서 자동으로 검색됩니다:
+# 1. 리포지토리 루트 (`.env`)
+# 2. 서브모듈 (`EchoShotX-backend-private/.env`)
+# 서브모듈에만 비밀 파일이 있다면 이 문서에 적힌 위치에 두기만 하면 됩니다.
 
 
 # -------------------- Database (RDS) --------------------
@@ -47,4 +51,16 @@ SERVER_PORT=8080
 
 # -------------------- WebSocket --------------------
 WEBSOCKET_ALLOWED_ORIGINS= 필요한 경우 입력
+
+# -------------------- Local MySQL on EC2 (Ubuntu)
+# 도커 컨테이너가 EC2 호스트에서 실행 중인 MySQL에 접속하게 하려면 아래처럼 설정합니다.
+# `scripts/after_install.sh`가 MySQL 설치/설정, `extra_hosts`가 호스트 연결을 담당합니다.
+DB_HOST=host.docker.internal
+DB_PORT=3306
+DB_NAME=echoshotx
+DB_USERNAME=echoshotx
+DB_PASSWORD=변경할_비밀번호
+
+# `scripts/after_install.sh`에서 Ubuntu용 MySQL 서버를 설치/구동하고 `bind-address=0.0.0.0`로 설정합니다.
+# `docker-compose.yml`의 `extra_hosts` 항목이 컨테이너에서 `host.docker.internal` 이름으로 EC2의 MySQL에 닿게 해줍니다.
 

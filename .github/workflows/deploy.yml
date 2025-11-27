@@ -9,8 +9,8 @@ on:
 
 env:
   AWS_REGION: ap-northeast-2
-  S3_BUCKET_NAME: echoshotx-bucket-deploy
-  CODE_DEPLOY_APPLICATION_NAME: echoshotx-deploy
+  S3_BUCKET_NAME: echoshotx-codedeploy
+  CODE_DEPLOY_APPLICATION_NAME: echoshotx
   CODE_DEPLOY_DEPLOYMENT_GROUP_NAME: echoshotx
   DOCKER_IMAGE_NAME: echoshotx-backend
 

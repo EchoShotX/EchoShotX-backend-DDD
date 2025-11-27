@@ -85,6 +85,10 @@ services:
       - WEBSOCKET_ALLOWED_ORIGINS=${WEBSOCKET_ALLOWED_ORIGINS}
 
 
+    extra_hosts:
+      # host.docker.internal으로 EC2 호스트의 MySQL에 연결
+      - "host.docker.internal:host-gateway"
+
     depends_on:
       redis:
         condition: service_healthy
