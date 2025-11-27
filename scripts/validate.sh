@@ -10,7 +10,7 @@ cd /home/ubuntu/echoshotx
 # 컨테이너 상태 확인
 RUNNING_CONTAINERS=$(docker-compose ps | grep "Up" | wc -l)
 
-if [ "$RUNNING_CONTAINERS" -lt 2 ]; then
+if [ "$RUNNING_CONTAINERS" -lt 3 ]; then
     echo "❌ ERROR: Not all containers are running"
     docker-compose ps
     docker-compose logs --tail=50

@@ -15,17 +15,16 @@
 # DB_USERNAME=DB_USERNAME
 # DB_PASSWORD=DB_PASSWORD
 
-# -------------------- Local MySQL on EC2 (Ubuntu)
-# 도커 컨테이너가 EC2 호스트에서 실행 중인 MySQL에 접속하게 하려면 아래처럼 설정합니다.
-# `scripts/after_install.sh`가 MySQL 설치/설정, `extra_hosts`가 호스트 연결을 담당합니다.
-DB_HOST=host.docker.internal
+# -------------------- Dockerized MySQL (EC2)
+# `docker-compose.yml`이 `mysql` 서비스를 띄워서 같은 브릿지 네트워크 안에서 Spring이 바로 연결합니다.
+# `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`는 이 Dockerized MySQL에 그대로 전달되므로, 강력한 비밀번호를 설정하세요.
+DB_HOST=mysql
 DB_PORT=3306
 DB_NAME=echoshotx
 DB_USERNAME=echoshotx
-DB_PASSWORD=1234
+DB_PASSWORD=변경할_비밀번호
 
-# `scripts/after_install.sh`에서 Ubuntu용 MySQL 서버를 설치/구동하고 `bind-address=0.0.0.0`로 설정합니다.
-# `docker-compose.yml`의 `extra_hosts` 항목이 컨테이너에서 `host.docker.internal` 이름으로 EC2의 MySQL에 닿게 해줍니다.
+# `after_install.sh`와 `start.sh`는 이 `.env`를 로드하므로, `EchoShotX-backend-private/.env`에 이런 값들을 넣어 두기만 하면 됩니다.
 
 
 

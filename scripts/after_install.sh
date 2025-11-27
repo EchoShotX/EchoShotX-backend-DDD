@@ -34,48 +34,14 @@ if [ -z "$ENV_FILE" ]; then
     exit 1
 fi
 
-# 환경변수를 임시로 로드 (MySQL 설치/설정에 사용)
 set -o allexport
 . "$ENV_FILE"
 set +o allexport
-
-install_local_mysql() {
-    if [ -z "$DB_NAME" ] || [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ]; then
-        echo "❌ ERROR: DB_NAME/DB_USERNAME/DB_PASSWORD must be set for local MySQL setup"
-        exit 1
-    fi
-
-    if ! command -v mysql >/dev/null 2>&1; then
-        echo "Installing MySQL server (Ubuntu)..."
-        apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server
-    else
-        echo "✅ MySQL already installed"
-    fi
-
-    MY_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
-    if [ -f "$MY_CNF" ]; then
-        if grep -q "^bind-address" "$MY_CNF"; then
-            sed -i "s/^bind-address\\s*=\\s*.*/bind-address = 0.0.0.0/" "$MY_CNF"
-        else
-            echo "bind-address = 0.0.0.0" >> "$MY_CNF"
-        fi
-    fi
-
-    systemctl enable --now mysql
-
-    db_user_escaped=${DB_USERNAME//\'/\'\'}
-    db_password_escaped=${DB_PASSWORD//\'/\'\'}
-
-    echo "Configuring database ${DB_NAME} and user ${DB_USERNAME}..."
-    mysql -u root -e "CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-    mysql -u root -e "CREATE USER IF NOT EXISTS '${db_user_escaped}'@'%' IDENTIFIED BY '${db_password_escaped}';"
-    mysql -u root -e "ALTER USER '${db_user_escaped}'@'%' IDENTIFIED BY '${db_password_escaped}';"
-    mysql -u root -e "GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${db_user_escaped}'@'%';"
-    mysql -u root -e "FLUSH PRIVILEGES;"
-}
-
-install_local_mysql
+# 환경변수를 환경에 적용
+if [ -z "$DB_NAME" ] || [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ]; then
+    echo "❌ ERROR: DB_NAME/DB_USERNAME/DB_PASSWORD must be set for Dockerized MySQL"
+    exit 1
+fi
 
 # Docker 이미지 로드
 if [ -f echoshotx-backend.tar ]; then
