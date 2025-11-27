@@ -1,0 +1,64 @@
+# 민감한 정보 및 설정 파일
+.env
+.env.*
+*.env
+EchoShotX-backend-private/
+
+# Git 관련
+.git
+.gitignore
+.gitmodules
+
+# IDE 관련
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# 빌드 결과물 (이미 Dockerfile에서 빌드함)
+build/
+target/
+out/
+*.jar
+*.war
+
+# Gradle 캐시
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# 테스트 관련
+src/test/
+**/test/
+
+# 문서
+docs/
+README.md
+*.md
+
+# CI/CD 관련
+.github/
+appspec.yml
+scripts/
+
+# Docker 관련
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Nginx 설정
+nginx/
+
+# 로그
+*.log
+logs/
+
+# 임시 파일
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS 관련
+.DS_Store
+Thumbs.db

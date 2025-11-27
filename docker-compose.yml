@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  redis:
+    env_file:
+      - .env
+    image: redis:7-alpine
+    container_name: echoshotx-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - echoshotx-network
+
+  app:
+    image: echoshotx-backend:latest
+    container_name: echoshotx-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # -------------------- Database (RDS) --------------------
+      # .env의 DB_HOST, DB_PORT, DB_NAME, DB_USERNAME, DB_PASSWORD 사용
+      - SPRING_DATASOURCE_URL=jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver
+
+      # -------------------- Redis --------------------
+      # .env의 REDIS_PASSWORD 사용, HOST/PORT는 docker network 내부 사용
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+
+      # -------------------- JWT --------------------
+      # .env의 JWT_SECRET 사용
+      - APP_JWT_SECRET=${JWT_SECRET}
+
+      # -------------------- OAuth2 --------------------
+      # .env의 OAUTH_* 변수들 사용
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_ID=${OAUTH_NAVER_CLIENT_ID}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_NAVER_CLIENT_SECRET=${OAUTH_NAVER_CLIENT_SECRET}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_ID=${OAUTH_KAKAO_CLIENT_ID}
+      - SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_KAKAO_CLIENT_SECRET=${OAUTH_KAKAO_CLIENT_SECRET}
+      - AUTH_SUCCESS_REDIRECT_URI=${AUTH_SUCCESS_REDIRECT_URI}
+
+      # -------------------- AWS Configuration --------------------
+      # .env의 AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_REGION 사용
+      - CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${AWS_ACCESS_KEY}
+      - CLOUD_AWS_CREDENTIALS_SECRET_KEY=${AWS_SECRET_KEY}
+      - CLOUD_AWS_REGION=${AWS_REGION}
+
+      # -------------------- SQS --------------------
+      # .env의 AWS_SQS_QUEUE_URL, AWS_SQS_MESSAGE_GROUP_ID 사용
+      - CLOUD_AWS_SQS_QUEUE_URL=${AWS_SQS_QUEUE_URL}
+      - CLOUD_AWS_SQS_MESSAGE_GROUP_ID=${AWS_SQS_MESSAGE_GROUP_ID}
+      - CLOUD_AWS_SQS_FIFO=true
+
+      # -------------------- AWS S3 Buckets --------------------
+      # .env의 S3_BUCKET 사용 (영상 저장용)
+      - CLOUD_AWS_S3_BUCKET=${S3_BUCKET}
+
+      # -------------------- Application --------------------
+      # .env의 SERVER_PORT 사용
+      - SERVER_PORT=${SERVER_PORT:-8080}
+
+      # -------------------- CORS --------------------
+      # .env의 CORS_FRONT_URL 사용
+      - APP_CORS_FRONT_PATH=${CORS_FRONT_URL}
+
+      # -------------------- WebSocket --------------------
+      # .env의 WEBSOCKET_ALLOWED_ORIGINS 사용
+      - WEBSOCKET_ALLOWED_ORIGINS=${WEBSOCKET_ALLOWED_ORIGINS}
+
+
+    extra_hosts:
+      # host.docker.internal으로 EC2 호스트의 MySQL에 연결
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - echoshotx-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  redis-data:
+    driver: local
+
+networks:
+  echoshotx-network:
+    driver: bridge
+

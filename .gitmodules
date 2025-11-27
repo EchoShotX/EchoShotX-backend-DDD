@@ -1,0 +1,3 @@
+[submodule "EchoShotX-backend-private"]
+	path = EchoShotX-backend-private
+	url = https://github.com/EchoShotX/EchoShotX-backend-private.git

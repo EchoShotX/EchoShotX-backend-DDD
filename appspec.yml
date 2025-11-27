@@ -1,0 +1,55 @@
+version: 0.0
+os: linux
+
+files:
+  - source: /
+    destination: /home/ubuntu/echoshotx
+    overwrite: yes
+
+permissions:
+  - object: /home/ubuntu/echoshotx
+    pattern: "**"
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+    type:
+      - directory
+  - object: /home/ubuntu/echoshotx/scripts
+    owner: ubuntu
+    group: ubuntu
+    mode: 755
+    type:
+      - directory
+  - object: /home/ubuntu/echoshotx/echoshotx-backend.tar
+    owner: ubuntu
+    group: ubuntu
+    mode: 644
+    type:
+      - file
+
+hooks:
+  ApplicationStop:
+    - location: scripts/stop.sh
+      timeout: 60
+      runas: ubuntu
+
+  BeforeInstall:
+    - location: scripts/before_install.sh
+      timeout: 60
+      runas: ubuntu
+
+  AfterInstall:
+    - location: scripts/after_install.sh
+      timeout: 300
+      runas: ubuntu
+
+  ApplicationStart:
+    - location: scripts/start.sh
+      timeout: 300
+      runas: ubuntu
+
+  ValidateService:
+    - location: scripts/validate.sh
+      timeout: 60
+      runas: ubuntu
+
