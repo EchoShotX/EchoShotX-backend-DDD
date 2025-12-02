@@ -19,18 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class JobService {
 
     private final JobAdaptor jobAdaptor;
-    private final JobEventHandler jobEventHandler;
 
-    public void createAndPublishJob(Member member, Long videoId, String s3Key, String taskType) {
-        Job job = jobAdaptor.saveJob(Job.create(member.getId(), videoId, s3Key, taskType));
-        JobCreatedEvent event = JobCreatedEvent.builder()
-                .jobId(job.getId())
-                .videoId(videoId)
-                .taskType(taskType)
-                .memberId(member.getId())
-                .s3Key(s3Key)
-                .build();
-        jobEventHandler.handleCreate(event);
+    public Job createJob(Member member, Long videoId, String s3Key, String taskType) {
+        return jobAdaptor.saveJob(Job.create(member.getId(), videoId, s3Key, taskType));
     }
 
     public void markSendFailed(Long jobId) {
