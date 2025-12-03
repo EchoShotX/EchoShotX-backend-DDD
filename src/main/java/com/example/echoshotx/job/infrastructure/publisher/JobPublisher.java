@@ -1,5 +1,6 @@
 package com.example.echoshotx.job.infrastructure.publisher;
 
+import com.example.echoshotx.job.application.adaptor.JobAdaptor;
 import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.shared.config.aws.props.AwsProps;
@@ -28,7 +29,7 @@ public class JobPublisher {
     private final AwsProps awsProps;
     private final ObjectMapper objectMapper;
 
-    //service
+    //adaptor
     private final JobService jobService;
 
     @Retryable(
