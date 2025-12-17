@@ -106,7 +106,8 @@ public class SecurityConfig {
 
     private RequestMatcher[] authRelatedEndpoints() {
         List<RequestMatcher> requestMatchers = List.of(
-                antMatcher("/api/tokens/**")
+                antMatcher("/api/tokens/**"),
+                antMatcher(HttpMethod.POST, "/auth/exchange")
         );
         return requestMatchers.toArray(RequestMatcher[]::new);
     }

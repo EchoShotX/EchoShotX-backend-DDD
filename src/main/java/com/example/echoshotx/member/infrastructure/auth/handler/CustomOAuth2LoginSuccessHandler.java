@@ -1,7 +1,6 @@
 package com.example.echoshotx.member.infrastructure.auth.handler;
 
-import com.example.echoshotx.shared.security.dto.JwtToken;
-import com.example.echoshotx.shared.security.service.TokenService;
+import com.example.echoshotx.shared.redis.service.RedisService;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,26 +8,30 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
+import java.util.UUID;
 
 @Slf4j
 @Component
 public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
-    private final String REDIRECT_URI;
-    private final TokenService tokenService;
+    private final RedisService redisService;
+    private final String deepLinkScheme;
+    private final int codeTtlSeconds;
 
     public CustomOAuth2LoginSuccessHandler(
-            @Value("${auth.success-redirect-uri}") String redirectUri, TokenService tokenService) {
-        this.REDIRECT_URI = redirectUri;
-        this.tokenService = tokenService;
+            RedisService redisService,
+            @Value("${auth.deep-link-scheme:echoshotx}") String deepLinkScheme,
+            @Value("${auth.code-ttl-seconds:300}") int codeTtlSeconds) {
+        this.redisService = redisService;
+        this.deepLinkScheme = deepLinkScheme;
+        this.codeTtlSeconds = codeTtlSeconds;
     }
 
     @Override
@@ -37,26 +40,36 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
             return;
         }
         log.info("--------------------------- OAuth2LoginSuccessHandler ---------------------------");
-        JwtToken jwtToken = tokenService.generateToken(authentication);
-        String provider = null;
 
-        if (authentication instanceof OAuth2AuthenticationToken) {
-            OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
-            provider = oauth2Token.getAuthorizedClientRegistrationId();
-            Collection<GrantedAuthority> authorities = oauth2Token.getAuthorities();
-            authorities.forEach(grantedAuthority -> log.info("role {}", grantedAuthority.getAuthority()));
+        if (!(authentication instanceof OAuth2AuthenticationToken)) {
+            log.error("Authentication is not OAuth2AuthenticationToken");
+            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Invalid authentication type");
+            return;
         }
 
-        String url = UriComponentsBuilder.fromHttpUrl(REDIRECT_URI)
-                .queryParam("accessToken", jwtToken.getAccessToken())
-                .queryParam("refreshToken", jwtToken.getRefreshToken())
-                .queryParam("provider", provider)
-                .build()
-                .toUriString();
-        response.addHeader("Authorization",
-                jwtToken.getGrantType() + " " + jwtToken.getAccessToken());
+        OAuth2AuthenticationToken oauth2Token = (OAuth2AuthenticationToken) authentication;
+        String provider = oauth2Token.getAuthorizedClientRegistrationId();
+        Collection<GrantedAuthority> authorities = oauth2Token.getAuthorities();
+        authorities.forEach(grantedAuthority -> log.info("role {}", grantedAuthority.getAuthority()));
 
-        response.sendRedirect(url);
+        // 애플리케이션 전용이므로 모든 요청을 모바일로 처리
+        handleMobileAuth(request, response, authentication);
+    }
 
+    private void handleMobileAuth(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
+        // 1회용 인증 코드 생성
+        String code = UUID.randomUUID().toString();
+        String username = authentication.getName();
+        
+        log.info("Generating one-time auth code for mobile client. Username: {}", username);
+
+        // Redis에 코드 저장 (TTL: 설정된 시간)
+        redisService.setAuthCode(code, username, Duration.ofSeconds(codeTtlSeconds));
+
+        // 딥링크로 리다이렉트
+        String deepLinkUrl = deepLinkScheme + "://auth/callback?code=" + code;
+        log.info("Redirecting to deep link: {}", deepLinkUrl);
+        
+        response.sendRedirect(deepLinkUrl);
     }
 }

@@ -27,6 +27,9 @@ public enum ErrorStatus implements BaseCode {
     AUTH_ROLE_CANNOT_EXECUTE_URI(BAD_REQUEST, 4056, "해당 인가로는 실행할 수 없는 동작입니다."),
     AUTH_INVALID_AUTHENTICATION(UNAUTHORIZED, 4057, "유효하지 않은 인증 객체입니다."),
     AUTH_ADMIN_PRIVILEGES_REQUIRED(FORBIDDEN, 4003, "관리자의 권한이 필요합니다."),
+    AUTH_CODE_INVALID(UNAUTHORIZED, 4058, "유효하지 않은 인증 코드입니다."),
+    AUTH_CODE_EXPIRED(UNAUTHORIZED, 4059, "인증 코드가 만료되었습니다."),
+    AUTH_CODE_ALREADY_USED(UNAUTHORIZED, 4060, "이미 사용된 인증 코드입니다."),
 
     // File Error (4201 ~ 4210)
     FILE_READ_ERROR(INTERNAL_SERVER_ERROR, 4201, "파일을 읽는 중 오류가 발생했습니다."),
