@@ -67,6 +67,8 @@ spring:
 
 auth:
   success-redirect-uri: "{frontUrl}/login/oauth2/callback"
+  deep-link-scheme: echoshotx
+  code-ttl-seconds: 300  # 5분
 
 # 서버 포트 설정 (기본 포트 변경 시)
 server:
