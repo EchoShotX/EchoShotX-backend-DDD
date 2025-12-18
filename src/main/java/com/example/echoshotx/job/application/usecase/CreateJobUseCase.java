@@ -23,7 +23,7 @@ public class CreateJobUseCase {
         JobCreatedEvent event = JobCreatedEvent.builder()
                 .jobId(job.getId())
                 .videoId(job.getVideoId())
-                .taskType(job.getTaskType())
+                .process(job.getProcessingType())
                 .memberId(member.getId())
                 .s3Key(job.getS3Key())
                 .build();

@@ -1,5 +1,6 @@
 package com.example.echoshotx.job.application.event;
 
+import com.example.echoshotx.video.domain.entity.ProcessingType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,5 +13,5 @@ public class JobCreatedEvent {
     private final Long memberId;
     private final Long videoId;
     private final String s3Key;
-    private final String taskType;
+    private final ProcessingType processingType;
 }

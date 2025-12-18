@@ -23,10 +23,7 @@ public class CreditService {
     /**
      * 크레딧 사용 (영상 처리용)
      */
-    public CreditHistory useCreditsForVideoProcessing(Video video, ProcessingType processingType) {
-        Long memberId = video.getMemberId();
-        Member member = memberAdaptor.queryById(memberId);
-
+    public CreditHistory useCreditsForVideoProcessing(Member member, Video video, ProcessingType processingType) {
         // 필요 크레딧 계산
         int requiredCredits = calculateRequiredCredits(processingType, video.getOriginalMetadata().getDurationSeconds());
         
@@ -34,7 +31,7 @@ public class CreditService {
         member.useCredits(requiredCredits);
 
         // 사용 내역 기록
-        CreditHistory creditHistory = CreditHistory.createUsage(memberId, video.getId(), requiredCredits, processingType);
+        CreditHistory creditHistory = CreditHistory.createUsage(member.getId(), video.getId(), requiredCredits, processingType);
         return creditHistoryRepository.save(creditHistory);
     }
 

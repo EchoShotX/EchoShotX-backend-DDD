@@ -62,7 +62,6 @@ public class VideoService {
   @Transactional
   public Video enqueueForProcessing(Video video, String sqsMessageId) {
 	video.enqueueForProcessing(sqsMessageId);
-	video = videoRepository.save(video);
 
 	// 처리 시작 이벤트 발행
 	eventPublisher.publishEvent(

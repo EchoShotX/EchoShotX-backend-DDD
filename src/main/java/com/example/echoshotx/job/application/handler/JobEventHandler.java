@@ -21,7 +21,7 @@ public class JobEventHandler {
         JobMessage message = JobMessage.builder()
                 .jobId(event.getJobId())
                 .videoId(event.getVideoId())
-                .taskType(event.getTaskType())
+                .processingType(event.getProcessingType().name())
                 .memberId(event.getMemberId())
                 .s3Key(event.getS3Key())
                 .build();

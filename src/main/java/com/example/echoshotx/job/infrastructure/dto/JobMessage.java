@@ -1,5 +1,6 @@
 package com.example.echoshotx.job.infrastructure.dto;
 
+import com.example.echoshotx.video.domain.vo.VideoMetadata;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -23,7 +24,7 @@ public class JobMessage {
     /**
      * 작업 유형 (예: UPSCALE, THUMBNAIL_GENERATION 등)
      */
-    private final String taskType;
+    private final String processingType;
 
     /**
      * 작업을 요청한 사용자 ID
@@ -34,4 +35,9 @@ public class JobMessage {
      * 비디오 ID
      */
     private final Long videoId;
+
+    /**
+     * 추가 메타데이터 필드들
+     */
+    private final VideoMetadata videoMetadata;
 }
