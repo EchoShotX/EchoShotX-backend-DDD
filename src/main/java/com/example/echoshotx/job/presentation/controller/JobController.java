@@ -19,15 +19,5 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/jobs")
 public class JobController {
 
-    private final CreateJobUseCase createJobUseCase;
-
-    @Operation(summary = "Job 생성", description = "새로운 Job을 생성하고 SQS 큐에 게시합니다.")
-    @PostMapping
-    public ApiResponseDto<?> createJob(
-            @CurrentMember Member member,
-            @RequestBody JobRequest.Create request) {
-        createJobUseCase.execute(member, request);
-        return ApiResponseDto.onSuccess(SuccessStatus._SUCCESS);
-    }
 
 }

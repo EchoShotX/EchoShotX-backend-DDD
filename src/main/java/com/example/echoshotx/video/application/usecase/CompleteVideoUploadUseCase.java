@@ -79,9 +79,6 @@ public class CompleteVideoUploadUseCase {
     }
 
     private String sendToProcessingQueue(Member member, Video video) {
-        // TODO: SqsService를 통해 실제 SQS 메시지 전송
-        // return sqsService.sendMessage(video);
-
 		Job job = jobService.createJob(member, video.getId(), video.getOriginalFile().getS3Key(), video.getProcessingType());
 		JobCreatedEvent event = JobCreatedEvent.builder()
 				.jobId(job.getId())
