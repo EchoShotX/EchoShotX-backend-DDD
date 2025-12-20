@@ -1,6 +1,7 @@
 package com.example.echoshotx.video.application.usecase;
 
 import com.example.echoshotx.credit.application.service.CreditService;
+import com.example.echoshotx.credit.domain.util.CreditCalculator;
 import com.example.echoshotx.notification.application.event.VideoProcessingFailedEvent;
 import com.example.echoshotx.shared.annotation.usecase.UseCase;
 import com.example.echoshotx.video.application.adaptor.VideoAdaptor;
@@ -42,7 +43,7 @@ public class ProcessingFailedWebhookUseCase {
                 request.getErrorMessage());
 
         // 2. 사용된 크레딧 계산 (환불을 위해)
-        int usedCredits = calculateUsedCredits(video);
+        int usedCredits = CreditCalculator.calculateRequiredCredits(video.getProcessingType(), video.getOriginalMetadata().getDurationSeconds());
 
         // 3. 처리 실패 및 알림 발행 (QUEUED/PROCESSING → FAILED)
         String errorMessage = createErrorMessage(request);
@@ -68,19 +69,6 @@ public class ProcessingFailedWebhookUseCase {
         }
     }
 
-    /**
-     * 사용된 크레딧 계산.
-     *
-     * <p>TODO: 실제 CreditHistory에서 조회하거나, Video에서 계산.
-     */
-    private int calculateUsedCredits(Video video) {
-        if (video.getOriginalMetadata() == null) {
-            return 0;
-        }
-        double costPerSecond = video.getProcessingType().getCreditCostPerSecond();
-        double duration = video.getOriginalMetadata().getDurationSeconds();
-        return (int) Math.ceil(costPerSecond * duration);
-    }
 
     private String createErrorMessage(WebhookProcessingFailedRequest request) {
         return String.format(
