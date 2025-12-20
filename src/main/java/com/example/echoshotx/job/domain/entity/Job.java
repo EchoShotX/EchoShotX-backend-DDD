@@ -1,6 +1,7 @@
 package com.example.echoshotx.job.domain.entity;
 
 import com.example.echoshotx.shared.common.BaseTimeEntity;
+import com.example.echoshotx.video.domain.entity.ProcessingType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -27,12 +28,12 @@ public class Job extends BaseTimeEntity {
     @Column(name = "video_id")
     private Long videoId;
 
-    private String taskType;
+    private ProcessingType processingType;
 
-    public static Job create(Long memberId, Long videoId, String s3Key, String taskType) {
+    public static Job create(Long memberId, Long videoId, String s3Key, ProcessingType processingType) {
         return Job.builder()
                 .s3Key(s3Key)
-                .taskType(taskType)
+                .processingType(processingType)
                 .status(JobStatus.REQUESTED)
                 .build();
     }

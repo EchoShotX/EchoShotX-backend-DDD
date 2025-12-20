@@ -15,18 +15,18 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class CreateJobUseCase {
 
-    private final JobService jobService;
-    private final JobEventHandler jobEventHandler;
-
-    public void execute(Member member, JobRequest.Create request) {
-        Job job = jobService.createJob(member, request.getVideoId(), request.getS3Key(), request.getTaskType());
-        JobCreatedEvent event = JobCreatedEvent.builder()
-                .jobId(job.getId())
-                .videoId(job.getVideoId())
-                .taskType(job.getTaskType())
-                .memberId(member.getId())
-                .s3Key(job.getS3Key())
-                .build();
-        jobEventHandler.handleCreate(event);
-    }
+//    private final JobService jobService;
+//    private final JobEventHandler jobEventHandler;
+//
+//    public void execute(Member member, JobRequest.Create request) {
+//        Job job = jobService.createJob(member, request.getVideoId(), request.getS3Key(), request.getTaskType());
+//        JobCreatedEvent event = JobCreatedEvent.builder()
+//                .jobId(job.getId())
+//                .videoId(job.getVideoId())
+//                .processingType(job.getProcessingType())
+//                .memberId(member.getId())
+//                .s3Key(job.getS3Key())
+//                .build();
+//        jobEventHandler.handleCreate(event);
+//    }
 }

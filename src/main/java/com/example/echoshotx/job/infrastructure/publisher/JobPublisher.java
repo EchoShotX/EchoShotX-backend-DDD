@@ -42,11 +42,11 @@ public class JobPublisher {
             send(message);
         } catch (SqsException e) {
             log.warn("SQS send failed (SqsException). jobId={}, taskType={}, message={}",
-                    message.getJobId(), message.getTaskType(), e.getMessage());
+                    message.getJobId(), message.getProcessingType(), e.getMessage());
             throw e;
         } catch (RuntimeException e) {
             log.warn("SQS send failed (RuntimeException). jobId={}, taskType={}, message={}",
-                    message.getJobId(), message.getTaskType(), e.getMessage());
+                    message.getJobId(), message.getProcessingType(), e.getMessage());
             throw e;
         }
     }
@@ -84,7 +84,7 @@ public class JobPublisher {
         Map<String, MessageAttributeValue> attrs = new HashMap<>();
         attrs.put("taskType", MessageAttributeValue.builder()
                 .dataType("String")
-                .stringValue(message.getTaskType())
+                .stringValue(message.getProcessingType())
                 .build());
         builder.messageAttributes(attrs);
 

@@ -7,6 +7,7 @@ import com.example.echoshotx.job.domain.entity.Job;
 import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.job.infrastructure.publisher.JobPublisher;
 import com.example.echoshotx.member.domain.entity.Member;
+import com.example.echoshotx.video.domain.entity.ProcessingType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,8 @@ public class JobService {
 
     private final JobAdaptor jobAdaptor;
 
-    public Job createJob(Member member, Long videoId, String s3Key, String taskType) {
-        return jobAdaptor.saveJob(Job.create(member.getId(), videoId, s3Key, taskType));
+    public Job createJob(Member member, Long videoId, String s3Key, ProcessingType processingType) {
+        return jobAdaptor.saveJob(Job.create(member.getId(), videoId, s3Key, processingType));
     }
 
     public void markSendFailed(Long jobId) {

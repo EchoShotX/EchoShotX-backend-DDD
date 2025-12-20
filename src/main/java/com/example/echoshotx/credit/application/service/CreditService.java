@@ -1,6 +1,7 @@
 package com.example.echoshotx.credit.application.service;
 
 import com.example.echoshotx.credit.domain.entity.CreditHistory;
+import com.example.echoshotx.credit.domain.util.CreditCalculator;
 import com.example.echoshotx.credit.infrastructure.persistence.CreditHistoryRepository;
 import com.example.echoshotx.member.application.adaptor.MemberAdaptor;
 import com.example.echoshotx.member.domain.entity.Member;
@@ -23,26 +24,19 @@ public class CreditService {
     /**
      * 크레딧 사용 (영상 처리용)
      */
-    public CreditHistory useCreditsForVideoProcessing(Video video, ProcessingType processingType) {
-        Long memberId = video.getMemberId();
-        Member member = memberAdaptor.queryById(memberId);
-
+    public CreditHistory useCreditsForVideoProcessing(Member member, Video video, ProcessingType processingType) {
         // 필요 크레딧 계산
-        int requiredCredits = calculateRequiredCredits(processingType, video.getOriginalMetadata().getDurationSeconds());
+        int requiredCredits = CreditCalculator.calculateRequiredCredits(
+                processingType, 
+                video.getOriginalMetadata().getDurationSeconds()
+        );
         
         // 회원 크레딧 차감
         member.useCredits(requiredCredits);
 
         // 사용 내역 기록
-        CreditHistory creditHistory = CreditHistory.createUsage(memberId, video.getId(), requiredCredits, processingType);
+        CreditHistory creditHistory = CreditHistory.createUsage(member.getId(), video.getId(), requiredCredits, processingType);
         return creditHistoryRepository.save(creditHistory);
-    }
-
-    private int calculateRequiredCredits(ProcessingType processingType, Double videoDurationSeconds) {
-        double costPerSecond = processingType.getCreditCostPerSecond();
-        double totalCost = costPerSecond * videoDurationSeconds;
-        //        return Math.max(calculatedCredits, 10); // 최소 크레딧 10개 보장할 경우
-        return (int) Math.ceil(totalCost);
     }
 
     /**

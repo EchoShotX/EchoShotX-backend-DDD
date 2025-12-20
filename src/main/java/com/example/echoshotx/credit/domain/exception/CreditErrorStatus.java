@@ -21,6 +21,8 @@ public enum CreditErrorStatus implements BaseCode {
     CREDIT_NOT_VALID_USAGE(BAD_REQUEST, 4216, "유효하지 않은 크레딧 사용 정보입니다."),
     CREDIT_INVALID_QUERY_LIMIT(BAD_REQUEST, 4217, "조회 개수는 0보다 커야 합니다."),
     CREDIT_INVALID_DATE_RANGE(BAD_REQUEST, 4218, "시작 날짜는 종료 날짜보다 이전이어야 합니다."),
+    CREDIT_INVALID_PROCESSING_TYPE(BAD_REQUEST, 4219, "유효하지 않은 처리 타입입니다."),
+    CREDIT_INVALID_DURATION(BAD_REQUEST, 4220, "영상 길이는 0보다 커야 합니다."),
     ;
 
     private final HttpStatus httpStatus;
