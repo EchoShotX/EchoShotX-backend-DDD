@@ -82,16 +82,6 @@ public class VideoService {
   public Video completeProcessing(
 	  Video video, ProcessedVideo processedVideo, VideoMetadata processedMetadata) {
 	video.completeProcessing(processedVideo, processedMetadata);
-	video = videoRepository.save(video);
-
-	// 처리 완료 이벤트 발행
-	eventPublisher.publishEvent(
-		new VideoProcessingCompletedEvent(
-			video.getId(),
-			video.getMemberId(),
-			video.getOriginalFile().getFileName()));
-	log.info("Published VideoProcessingCompletedEvent for video: {}", video.getId());
-
 	return video;
   }
 
@@ -101,17 +91,6 @@ public class VideoService {
   @Transactional
   public Video failProcessing(Video video, String errorMessage) {
 	video.failProcessing(errorMessage);
-	video = videoRepository.save(video);
-
-	// 처리 실패 이벤트 발행
-	eventPublisher.publishEvent(
-		new VideoProcessingFailedEvent(
-			video.getId(),
-			video.getMemberId(),
-			video.getOriginalFile().getFileName(),
-			errorMessage));
-	log.info("Published VideoProcessingFailedEvent for video: {}", video.getId());
-
 	return video;
   }
 
