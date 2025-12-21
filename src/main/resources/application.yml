@@ -3,15 +3,15 @@ spring:
     active:
       - local
   datasource:
-    url: jdbc:mysql://localhost:3306/{{ secrets.DATABASE_NAME }}?serverTimezone=UTC
-    username: {{ secrets.DATABASE_USERNAME }}
-    password: {{ secrets.DATABASE_PASSWORD }}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
   data:
     redis:
-      port: {{ secrets.REDIS_PORT }}
-      host: {{ secrets.REDIS_HOST }}
-      password: {{ secrets.REDIS_PASSWORD }}
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
 
   jpa:
     hibernate:
@@ -27,8 +27,8 @@ spring:
       client:
         registration:
           google:
-            client-id: {{ secrets.GOOGLE_CLIENT_ID }}
-            client-secret: {{ secrets.GOOGLE_CLIENT_SECRET }}
+            client-id: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID}
+            client-secret: ${SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET}
             scope:
               - email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
@@ -85,23 +85,23 @@ logging:
 #jwt secret
 app:
   jwt:
-    secret: {{ secrets.JWT_SECRET }}
+    secret: ${APP_JWT_SECRET}
   cors:
-    front-path: {{ secrets.FRONT_URL }} #cors front url
+    front-path: ${APP_CORS_FRONT_PATH} #cors front url
 
 #cloud
 cloud:
   aws:
     credentials:
-      access-key: {{ secrets.AWS_ACCESS_KEY }} # 환경변수 필요
-      secret-key: {{ secrets.AWS_SECRET_KEY }} # 환경변수 필요
+      access-key: ${CLOUD_AWS_CREDENTIALS_ACCESS_KEY}
+      secret-key: ${CLOUD_AWS_CREDENTIALS_SECRET_KEY}
     region: ap-northeast-2
     s3:
-      bucket: {{ secrets.AWS_S3_BUCKET }} # 환경변수 필요
+      bucket: ${CLOUD_AWS_S3_BUCKET} # 환경변수 필요
     sqs:
-      queue-url: {{ secrets.AWS_SQS_QUEUE_URL }} # 환경변수 필요
+      queue-url: ${CLOUD_AWS_SQS_QUEUE_URL}
       fifo: true
-      message-group-id: {{ secrets.AWS_SQS_MESSAGE_GROUP_ID }} # 환경변수 필요
+      message-group-id: ${CLOUD_AWS_SQS_MESSAGE_GROUP_ID}
 
 # AI 서버 설정
 ai:
