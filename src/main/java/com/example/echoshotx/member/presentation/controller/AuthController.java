@@ -1,9 +1,12 @@
 package com.example.echoshotx.member.presentation.controller;
 
 import com.example.echoshotx.member.application.usecase.ExchangeCodeUseCase;
+import com.example.echoshotx.member.application.usecase.ReIssueRefreshTokenUseCase;
 import com.example.echoshotx.member.presentation.dto.request.AuthExchangeRequest;
+import com.example.echoshotx.member.presentation.dto.request.AuthRequest;
 import com.example.echoshotx.member.presentation.dto.response.AuthExchangeResponse;
 import com.example.echoshotx.shared.exception.payload.dto.ApiResponseDto;
+import com.example.echoshotx.shared.security.dto.JwtToken;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final ExchangeCodeUseCase exchangeCodeUseCase;
+    private final ReIssueRefreshTokenUseCase reIssueRefreshTokenUseCase;
 
     @Operation(
             summary = "인증 코드 교환",
@@ -33,5 +37,12 @@ public class AuthController {
         
         return ApiResponseDto.onSuccess(response);
     }
+
+    @Operation(summary = "토큰 재발급", description = "토큰 재발급")
+    @PostMapping("/reIssue")
+    public ApiResponseDto<JwtToken> reIssueRefreshToken(@RequestBody AuthRequest.ReIssue request) {
+        return ApiResponseDto.onSuccess(reIssueRefreshTokenUseCase.execute(request));
+    }
+
 }
 
