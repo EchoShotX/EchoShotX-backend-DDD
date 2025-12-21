@@ -11,7 +11,7 @@ spring:
     redis:
       port: {{ secrets.REDIS_PORT }}
       host: {{ secrets.REDIS_HOST }}
-      password:
+      password: {{ secrets.REDIS_PASSWORD }}
 
   jpa:
     hibernate:
