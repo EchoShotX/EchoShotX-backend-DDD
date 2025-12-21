@@ -31,6 +31,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
 
+    private static final int INIT_CREDIT = 600;
+
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         OAuth2User oAuth2User = super.loadUser(userRequest);
@@ -71,6 +73,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .username(username)
 //                .nickname(nickname)
                 .email(email)
+                .currentCredits(INIT_CREDIT)
                 .role(Role.USER)
                 .build();
         return memberRepository.save(member);
