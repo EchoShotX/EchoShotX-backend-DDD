@@ -40,7 +40,7 @@ public class ExchangeCodeUseCase {
             throw new MemberHandler(ErrorStatus.AUTH_CODE_INVALID);
         }
 
-        Member member = memberAdaptor.queryByUsername(username);
+        Member member = memberAdaptor.queryById(Long.parseLong(username));
 
         CustomUserDetails userDetails = new CustomUserDetails(member);
 

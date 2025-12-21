@@ -59,7 +59,7 @@ public class CustomOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
     private void handleMobileAuth(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
         // 1회용 인증 코드 생성
         String code = UUID.randomUUID().toString();
-        String username = authentication.getName();
+        String username = authentication.getName(); // memberId
         
         log.info("Generating one-time auth code for mobile client. Username: {}", username);
 
