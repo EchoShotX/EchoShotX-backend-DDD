@@ -73,7 +73,7 @@ class InitiateVideoUploadUseCaseTest {
                 "test-video.mp4",
                 10_000_000L,  // 10MB
                 "video/mp4",
-                ProcessingType.BASIC_ENHANCEMENT
+                ProcessingType.AI_UPSCALING
         );
 
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(15);
@@ -95,7 +95,7 @@ class InitiateVideoUploadUseCaseTest {
                         .s3Key("videos/1/original/upload-id/20250101120000_test-video.mp4")
                         .build())
                 .status(VideoStatus.PENDING_UPLOAD)
-                .processingType(ProcessingType.BASIC_ENHANCEMENT)
+                .processingType(ProcessingType.AI_UPSCALING)
                 .uploadId("upload-id")
                 .presignedUrlExpiresAt(expiresAt)
                 .retryCount(0)
@@ -201,7 +201,7 @@ class InitiateVideoUploadUseCaseTest {
             assertThat(memberIdCaptor.getValue()).isEqualTo(1L);
             assertThat(fileNameCaptor.getValue()).isEqualTo("test-video.mp4");
             assertThat(fileSizeCaptor.getValue()).isEqualTo(10_000_000L);
-            assertThat(processingTypeCaptor.getValue()).isEqualTo(ProcessingType.BASIC_ENHANCEMENT);
+            assertThat(processingTypeCaptor.getValue()).isEqualTo(ProcessingType.AI_UPSCALING);
             assertThat(s3KeyCaptor.getValue()).contains("videos/1/original/");
             assertThat(uploadIdCaptor.getValue()).isNotEmpty();
             assertThat(expiresAtCaptor.getValue()).isNotNull();
@@ -415,7 +415,7 @@ class InitiateVideoUploadUseCaseTest {
         void execute_Success_WithMp4File() {
             // Given
             InitiateUploadRequest mp4Request = createTestRequest(
-                    "video.mp4", 15_000_000L, "video/mp4", ProcessingType.BASIC_ENHANCEMENT
+                    "video.mp4", 15_000_000L, "video/mp4", ProcessingType.AI_UPSCALING
             );
             
             given(awsS3Service.generateUploadUrl(anyString(), eq("video/mp4"), anyLong()))
@@ -461,7 +461,7 @@ class InitiateVideoUploadUseCaseTest {
         void execute_Success_WithAviFile() {
             // Given
             InitiateUploadRequest aviRequest = createTestRequest(
-                    "video.avi", 25_000_000L, "video/x-msvideo", ProcessingType.BASIC_ENHANCEMENT
+                    "video.avi", 25_000_000L, "video/x-msvideo", ProcessingType.AI_UPSCALING
             );
             
             given(awsS3Service.generateUploadUrl(anyString(), eq("video/x-msvideo"), anyLong()))
@@ -489,14 +489,14 @@ class InitiateVideoUploadUseCaseTest {
         void execute_Success_WithBasicEnhancement() {
             // Given
             testRequest = createTestRequest(
-                    "video.mp4", 10_000_000L, "video/mp4", ProcessingType.BASIC_ENHANCEMENT
+                    "video.mp4", 10_000_000L, "video/mp4", ProcessingType.AI_UPSCALING
             );
 
             given(awsS3Service.generateUploadUrl(anyString(), anyString(), anyLong()))
                     .willReturn(testPresignedUrlResponse);
             given(videoService.uploadVideo(
                     anyLong(), anyString(), anyLong(),
-                    eq(ProcessingType.BASIC_ENHANCEMENT), anyString(), anyString(), any(LocalDateTime.class)
+                    eq(ProcessingType.AI_UPSCALING), anyString(), anyString(), any(LocalDateTime.class)
             )).willReturn(testVideo);
 
             // When
@@ -506,7 +506,7 @@ class InitiateVideoUploadUseCaseTest {
             assertThat(response).isNotNull();
             verify(videoService).uploadVideo(
                     anyLong(), anyString(), anyLong(),
-                    eq(ProcessingType.BASIC_ENHANCEMENT), anyString(), anyString(), any(LocalDateTime.class)
+                    eq(ProcessingType.AI_UPSCALING), anyString(), anyString(), any(LocalDateTime.class)
             );
         }
 
@@ -546,7 +546,7 @@ class InitiateVideoUploadUseCaseTest {
         void execute_Success_WithMinimumFileSize() {
             // Given
             InitiateUploadRequest smallRequest = createTestRequest(
-                    "tiny.mp4", 1L, "video/mp4", ProcessingType.BASIC_ENHANCEMENT
+                    "tiny.mp4", 1L, "video/mp4", ProcessingType.AI_UPSCALING
             );
 
             given(awsS3Service.generateUploadUrl(anyString(), anyString(), eq(1L)))
@@ -594,7 +594,7 @@ class InitiateVideoUploadUseCaseTest {
             // Given
             long normalSize = 50L * 1024 * 1024; // 50MB
             InitiateUploadRequest normalRequest = createTestRequest(
-                    "normal.mp4", normalSize, "video/mp4", ProcessingType.BASIC_ENHANCEMENT
+                    "normal.mp4", normalSize, "video/mp4", ProcessingType.AI_UPSCALING
             );
 
             given(awsS3Service.generateUploadUrl(anyString(), anyString(), eq(normalSize)))

@@ -62,7 +62,7 @@ public class JobPublisherTest {
                 .jobId(1L)
                 .videoId(10L)
                 .memberId(100L)
-                .taskType("UPSCALE")
+                .processingType("UPSCALE")
                 .s3Key("test.mp4")
                 .build();
     }
