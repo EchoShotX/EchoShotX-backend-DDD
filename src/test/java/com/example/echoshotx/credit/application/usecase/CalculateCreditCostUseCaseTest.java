@@ -42,7 +42,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_Success_WhenBasicEnhancementWithIntegerSeconds() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(60.0);
 
             // When
@@ -50,7 +50,7 @@ class CalculateCreditCostUseCaseTest {
 
             // Then
             assertThat(response).isNotNull();
-            assertThat(response.getProcessingType()).isEqualTo(ProcessingType.BASIC_ENHANCEMENT);
+            assertThat(response.getProcessingType()).isEqualTo(ProcessingType.AI_UPSCALING);
             assertThat(response.getProcessingTypeDescription()).isEqualTo("기본 향상");
             assertThat(response.getDurationSeconds()).isEqualTo(60.0);
             assertThat(response.getCreditCostPerSecond()).isEqualTo(1);
@@ -82,11 +82,11 @@ class CalculateCreditCostUseCaseTest {
         }
 
         @Test
-        @DisplayName("성공: BASIC_ENHANCEMENT - 소수점 초 (올림 처리)")
+        @DisplayName("성공: AI_UPSCALING - 소수점 초 (올림 처리)")
         void execute_Success_WhenBasicEnhancementWithDecimalSeconds() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(10.1);
 
             // When
@@ -122,7 +122,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_Success_WhenMinimumDuration() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(0.1);
 
             // When
@@ -174,7 +174,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_ReturnsResponse_WithCorrectFormulaFormat() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(15.75);
 
             // When
@@ -213,7 +213,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_ThrowsException_WhenDurationSecondsIsNull() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(null);
 
             // When & Then
@@ -227,7 +227,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_ThrowsException_WhenDurationSecondsIsZero() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(0.0);
 
             // When & Then
@@ -241,7 +241,7 @@ class CalculateCreditCostUseCaseTest {
         void execute_ThrowsException_WhenDurationSecondsIsNegative() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(-10.0);
 
             // When & Then
@@ -270,11 +270,11 @@ class CalculateCreditCostUseCaseTest {
     class VariousDurationTest {
 
         @Test
-        @DisplayName("성공: 10초 영상 - BASIC_ENHANCEMENT")
+        @DisplayName("성공: 10초 영상 - AI_UPSCALING")
         void execute_Success_When10SecondsBasicEnhancement() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(10.0);
 
             // When
@@ -300,11 +300,11 @@ class CalculateCreditCostUseCaseTest {
         }
 
         @Test
-        @DisplayName("성공: 30초 영상 - BASIC_ENHANCEMENT")
+        @DisplayName("성공: 30초 영상 - AI_UPSCALING")
         void execute_Success_When30SecondsBasicEnhancement() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(30.0);
 
             // When
@@ -330,11 +330,11 @@ class CalculateCreditCostUseCaseTest {
         }
 
         @Test
-        @DisplayName("성공: 1분 영상 - BASIC_ENHANCEMENT")
+        @DisplayName("성공: 1분 영상 - AI_UPSCALING")
         void execute_Success_When1MinuteBasicEnhancement() {
             // Given
             CalculateCreditCostRequest request = new CalculateCreditCostRequest();
-            request.setProcessingType(ProcessingType.BASIC_ENHANCEMENT);
+            request.setProcessingType(ProcessingType.AI_UPSCALING);
             request.setDurationSeconds(60.0);
 
             // When
