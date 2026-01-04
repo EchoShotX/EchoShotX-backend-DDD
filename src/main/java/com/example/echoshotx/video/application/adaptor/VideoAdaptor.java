@@ -28,7 +28,12 @@ public class VideoAdaptor {
         return videoRepository.findById(videoId)
                 .orElseThrow(() -> new VideoHandler(VideoErrorStatus.VIDEO_NOT_FOUND));
     }
-    
+
+    public Video queryByIdWithLock(Long videoId) {
+        return videoRepository.findByIdWithLock(videoId)
+                .orElseThrow(() -> new VideoHandler(VideoErrorStatus.VIDEO_NOT_FOUND));
+    }
+
     /**
      * 회원별 특정 상태의 영상 목록 조회
      */
