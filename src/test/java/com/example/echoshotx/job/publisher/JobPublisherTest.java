@@ -4,6 +4,7 @@ import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.infrastructure.dto.JobMessage;
 import com.example.echoshotx.job.infrastructure.publisher.JobPublisher;
 import com.example.echoshotx.shared.config.aws.props.AwsProps;
+import com.example.echoshotx.video.domain.entity.ProcessingType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -62,7 +63,7 @@ public class JobPublisherTest {
                 .jobId(1L)
                 .videoId(10L)
                 .memberId(100L)
-                .processingType("UPSCALE")
+                .processingType(ProcessingType.AI_UPSCALING.name())
                 .s3Key("test.mp4")
                 .build();
     }

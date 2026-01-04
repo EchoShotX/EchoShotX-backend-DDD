@@ -32,6 +32,8 @@ public class Job extends BaseTimeEntity {
 
     public static Job create(Long memberId, Long videoId, String s3Key, ProcessingType processingType) {
         return Job.builder()
+                .memberId(memberId)
+                .videoId(videoId)
                 .s3Key(s3Key)
                 .processingType(processingType)
                 .status(JobStatus.REQUESTED)

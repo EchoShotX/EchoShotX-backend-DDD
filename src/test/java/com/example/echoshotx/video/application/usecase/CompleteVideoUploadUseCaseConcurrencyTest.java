@@ -1,449 +1,347 @@
 package com.example.echoshotx.video.application.usecase;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.verify;
-
 import com.example.echoshotx.credit.application.service.CreditService;
-import com.example.echoshotx.credit.domain.entity.CreditHistory;
-import com.example.echoshotx.credit.domain.entity.TransactionType;
 import com.example.echoshotx.job.application.handler.JobEventHandler;
 import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.domain.entity.Job;
-import com.example.echoshotx.job.domain.entity.JobStatus;
+import com.example.echoshotx.job.infrastructure.persistence.JobRepository;
 import com.example.echoshotx.member.domain.entity.Member;
 import com.example.echoshotx.member.domain.entity.Role;
+import com.example.echoshotx.member.infrastructure.persistence.MemberRepository;
 import com.example.echoshotx.video.application.adaptor.VideoAdaptor;
 import com.example.echoshotx.video.application.service.VideoService;
 import com.example.echoshotx.video.domain.entity.ProcessingType;
 import com.example.echoshotx.video.domain.entity.Video;
-import com.example.echoshotx.video.domain.entity.VideoStatus;
-import com.example.echoshotx.video.domain.vo.VideoFile;
-import com.example.echoshotx.video.domain.vo.VideoMetadata;
+import com.example.echoshotx.video.infrastructure.persistence.VideoRepository;
 import com.example.echoshotx.video.presentation.dto.request.CompleteUploadRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.DirtiesContext;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * CompleteVideoUploadUseCase 동시성 테스트.
- *
- * <p>테스트 목적:
- * <ul>
- *   <li>사용자가 빠르게 연속으로 요청할 때 Job 중복 생성 여부 확인</li>
- *   <li>SQS 메시지 중복 전송 여부 확인</li>
- *   <li>크레딧 중복 차감 여부 확인</li>
- * </ul>
+ * 
+ * <p>비관락 적용 전후를 비교하여 Job 중복 생성 방지 효과를 검증합니다.
  */
-@ExtendWith(MockitoExtension.class)
+@Slf4j
+@SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 @DisplayName("CompleteVideoUploadUseCase 동시성 테스트")
 class CompleteVideoUploadUseCaseConcurrencyTest {
 
-    @Mock
-    private VideoAdaptor videoAdaptor;
-
-    @Mock
-    private VideoService videoService;
-
-    @Mock
-    private CreditService creditService;
-
-    @Mock
-    private JobService jobService;
-
-    @Mock
-    private JobEventHandler jobEventHandler;
-
-    @InjectMocks
+    @Autowired
     private CompleteVideoUploadUseCase completeVideoUploadUseCase;
 
+    @Autowired
+    private VideoAdaptor videoAdaptor;
+
+    @Autowired
+    private VideoService videoService;
+
+    @Autowired
+    private CreditService creditService;
+
+    @Autowired
+    private JobService jobService;
+
+    @Autowired
+    private JobEventHandler jobEventHandler;
+
+    @Autowired
+    private MemberRepository memberRepository;
+
+    @Autowired
+    private VideoRepository videoRepository;
+
+    @Autowired
+    private JobRepository jobRepository;
+
     private Member testMember;
-    private Video testVideo;
-    private Video uploadCompletedVideo;
-    private Video queuedVideo;
     private CompleteUploadRequest testRequest;
-    private CreditHistory testCreditHistory;
+    private CompleteVideoUploadUseCaseWithoutLock completeVideoUploadUseCaseWithoutLock;
+    private static final int CONCURRENT_THREADS = 20;
+    private static final int TEST_ITERATIONS = 3;
 
     @BeforeEach
     void setUp() {
-        // Given: 테스트 데이터 준비
-        testMember =
-                Member.builder()
-                        .id(1L)
-                        .username("testuser@example.com")
-                        .email("testuser@example.com")
-                        .role(Role.USER)
-                        .currentCredits(1000)
-                        .build();
+        // 비관락 미적용 UseCase 인스턴스 생성
+        completeVideoUploadUseCaseWithoutLock = new CompleteVideoUploadUseCaseWithoutLock(
+                videoAdaptor,
+                videoService,
+                creditService,
+                jobService,
+                jobEventHandler
+        );
+        // 기존 데이터 정리
+        jobRepository.deleteAll();
+        videoRepository.deleteAll();
+        memberRepository.deleteAll();
 
-        testRequest =
-                new CompleteUploadRequest(
-                        120.5, // durationSeconds
-                        1920,  // width
-                        1080,  // height
-                        "h264", // codec
-                        5_000_000L, // bitrate
-                        30.0 // frameRate
-                );
+        // 테스트용 Member 생성
+        testMember = Member.builder()
+                .username("test-user-" + System.currentTimeMillis())
+                .email("test@example.com")
+                .role(Role.USER)
+                .currentCredits(100000) // 충분한 크레딧 제공
+                .build();
+        testMember = memberRepository.save(testMember);
 
-        // 초기 PENDING_UPLOAD 상태의 비디오
-        testVideo =
-                Video.builder()
-                        .id(100L)
-                        .memberId(1L)
-                        .originalFile(
-                                VideoFile.builder()
-                                        .fileName("test-video.mp4")
-                                        .fileSizeBytes(10_000_000L)
-                                        .s3Key("videos/1/original/upload-id/20250101120000_test-video.mp4")
-                                        .build())
-                        .status(VideoStatus.PENDING_UPLOAD)
-                        .processingType(ProcessingType.AI_UPSCALING)
-                        .uploadId("upload-id-123")
-                        .retryCount(0)
-                        .build();
-
-        // 업로드 완료된 비디오 (UPLOAD_COMPLETED 상태)
-        uploadCompletedVideo =
-                Video.builder()
-                        .id(100L)
-                        .memberId(1L)
-                        .originalFile(testVideo.getOriginalFile())
-                        .status(VideoStatus.UPLOAD_COMPLETED)
-                        .processingType(ProcessingType.AI_UPSCALING)
-                        .uploadId("upload-id-123")
-                        .originalMetadata(
-                                VideoMetadata.builder()
-                                        .durationSeconds(120.5)
-                                        .width(1920)
-                                        .height(1080)
-                                        .codec("h264")
-                                        .bitrate(5_000_000L)
-                                        .frameRate(30.0)
-                                        .build())
-                        .retryCount(0)
-                        .build();
-
-        // 큐에 등록된 비디오 (QUEUED 상태)
-        queuedVideo =
-                Video.builder()
-                        .id(100L)
-                        .memberId(1L)
-                        .originalFile(testVideo.getOriginalFile())
-                        .status(VideoStatus.QUEUED)
-                        .processingType(ProcessingType.AI_UPSCALING)
-                        .uploadId("upload-id-123")
-                        .sqsMessageId("sqs-msg-uuid-12345")
-                        .originalMetadata(uploadCompletedVideo.getOriginalMetadata())
-                        .retryCount(0)
-                        .build();
-
-        // 크레딧 사용 내역
-        testCreditHistory =
-                CreditHistory.builder()
-                        .id(1L)
-                        .memberId(1L)
-                        .videoId(100L)
-                        .transactionType(TransactionType.USAGE)
-                        .amount(-100)
-                        .description("Video processing for BASIC_ENHANCEMENT")
-                        .build();
+        // 테스트용 Request 생성
+        testRequest = new CompleteUploadRequest(
+                120.5, // durationSeconds
+                1920,  // width
+                1080,  // height
+                "h264", // codec
+                5_000_000L, // bitrate
+                30.0 // frameRate
+        );
     }
 
     @Test
-    @DisplayName("동시 요청 시 Job 중복 생성 및 SQS 메시지 중복 전송 발생 확인")
-    void execute_ConcurrentRequests_CreatesDuplicateJobsAndSendsDuplicateMessages()
-            throws InterruptedException {
-        // Given: 사용자가 빠르게 연속으로 API를 호출하는 상황 시뮬레이션
-        // 실제로는 각 요청마다 UseCase.execute()가 호출됨
-        int concurrentRequests = 5; // 동시 요청 수
-        ExecutorService executorService = Executors.newFixedThreadPool(concurrentRequests);
-        CountDownLatch startLatch = new CountDownLatch(1); // 모든 스레드가 동시에 시작하도록
-        CountDownLatch completeLatch = new CountDownLatch(concurrentRequests); // 모든 요청 완료 대기
+    @DisplayName("비관락 적용 전: 동시 실행 시 Job 중복 생성 발생")
+    void testWithoutLock_ConcurrentExecution_CreatesMultipleJobs() throws Exception {
+        log.info("=== 비관락 적용 전 테스트 시작 ===");
+        
+        TestResult result = runConcurrentTest(
+                completeVideoUploadUseCaseWithoutLock,
+                "비관락 미적용"
+        );
 
-        // Mock 설정: 모든 요청이 PENDING_UPLOAD 상태를 읽을 수 있도록 설정
-        // (트랜잭션 경쟁 조건 시뮬레이션 - 모든 요청이 같은 상태를 읽음)
-        given(videoAdaptor.queryById(100L)).willReturn(testVideo);
-        given(videoService.completeUpload(eq(testVideo), any(VideoMetadata.class)))
-                .willReturn(uploadCompletedVideo);
-        given(creditService.useCreditsForVideoProcessing(any(), any(), any()))
-                .willReturn(testCreditHistory);
-        given(videoService.enqueueForProcessing(eq(uploadCompletedVideo), any(String.class)))
-                .willReturn(queuedVideo);
+        log.info("비관락 미적용 결과: 생성된 Job 개수={}, 성공한 스레드={}, 실패한 스레드={}",
+                result.getJobCount(), result.getSuccessCount(), result.getFailureCount());
 
-        // Job 생성 시마다 새로운 Job 반환 (중복 생성 시뮬레이션)
-        AtomicInteger jobIdCounter = new AtomicInteger(1);
-        given(jobService.createJob(any(), eq(100L), any(), any()))
-                .willAnswer(
-                        invocation -> {
-                            // 각 요청마다 새로운 Job 생성 (중복 생성 시뮬레이션)
-                            int jobId = jobIdCounter.getAndIncrement();
-                            return Job.builder()
-                                    .id((long) jobId)
-                                    .videoId(100L)
-                                    .memberId(1L)
-                                    .s3Key("videos/1/original/upload-id/20250101120000_test-video.mp4")
-                                    .processingType(ProcessingType.AI_UPSCALING)
-                                    .status(JobStatus.REQUESTED)
-                                    .build();
-                        });
-
-        // When: 동시에 여러 요청 실행 (사용자가 빠르게 연속으로 클릭)
-        for (int i = 0; i < concurrentRequests; i++) {
-            final int requestIndex = i;
-            executorService.submit(
-                    () -> {
-                        try {
-                            // 모든 스레드가 동시에 시작하도록 대기
-                            startLatch.await();
-
-                            // UseCase 실행 (API 호출 시뮬레이션)
-                            completeVideoUploadUseCase.execute(100L, testRequest, testMember);
-
-                        } catch (Exception e) {
-                            // 예외 발생 시 로그 출력
-                            System.err.println(
-                                    "Request " + requestIndex + " failed: " + e.getMessage());
-                            e.printStackTrace();
-                        } finally {
-                            completeLatch.countDown();
-                        }
-                    });
-        }
-
-        // 모든 스레드가 준비될 때까지 대기 후 동시에 시작
-        Thread.sleep(100); // 스레드 준비 시간
-        startLatch.countDown(); // 모든 스레드 동시 시작
-
-        // 모든 요청 완료 대기 (최대 10초)
-        boolean completed = completeLatch.await(10, TimeUnit.SECONDS);
-        executorService.shutdown();
-
-        // Then: 중복 생성 확인
-        assertThat(completed)
-                .as("모든 요청이 완료되어야 함")
-                .isTrue();
-
-        // JobService.createJob이 여러 번 호출되었는지 확인
-        // 동시 요청으로 인해 같은 videoId에 대해 여러 Job이 생성됨
-        verify(jobService, atLeast(concurrentRequests))
-                .createJob(any(), eq(100L), any(), any());
-
-        // JobEventHandler.handleCreate가 여러 번 호출되었는지 확인 (SQS 전송 트리거)
-        ArgumentCaptor<com.example.echoshotx.job.application.event.JobCreatedEvent> eventCaptor =
-                ArgumentCaptor.forClass(
-                        com.example.echoshotx.job.application.event.JobCreatedEvent.class);
-        verify(jobEventHandler, atLeast(concurrentRequests)).handleCreate(eventCaptor.capture());
-
-        List<com.example.echoshotx.job.application.event.JobCreatedEvent> capturedEvents =
-                eventCaptor.getAllValues();
-
-        // 각 이벤트의 jobId가 다른지 확인 (중복 Job 생성 확인)
-        List<Long> jobIds =
-                capturedEvents.stream()
-                        .map(com.example.echoshotx.job.application.event.JobCreatedEvent::getJobId)
-                        .toList();
-
-        System.out.println("========================================");
-        System.out.println("동시성 테스트 결과:");
-        System.out.println("동시 요청 수: " + concurrentRequests);
-        System.out.println("Job 생성 호출 횟수: " + capturedEvents.size());
-        System.out.println("생성된 Job ID: " + jobIds);
-        System.out.println("========================================");
-
-        // 검증: 같은 videoId에 대해 여러 Job이 생성되었는지 확인
-        assertThat(capturedEvents)
-                .as("동시 요청으로 인해 Job이 %d번 이상 생성되어야 함 (현재: %d번)", concurrentRequests, capturedEvents.size())
-                .hasSizeGreaterThanOrEqualTo(concurrentRequests);
-
-        // 모든 Job이 같은 videoId를 가지고 있는지 확인
-        assertThat(capturedEvents)
-                .as("모든 Job이 같은 videoId를 가져야 함")
-                .allMatch(event -> event.getVideoId().equals(100L));
-
-        if (jobIds.size() > 1) {
-            System.out.println(
-                    "⚠️ 경고: 같은 videoId("
-                            + 100L
-                            + ")에 대해 "
-                            + jobIds.size()
-                            + "개의 Job이 생성되었습니다. (중복 생성 문제 발생)");
-        }
+        // 비관락 미적용 시 여러 Job이 생성될 수 있음
+        assertThat(result.getJobCount())
+                .as("비관락 미적용 시 여러 Job이 생성될 수 있음")
+                .isGreaterThan(1);
     }
 
     @Test
-    @DisplayName("동시 요청 시 크레딧 중복 차감 발생 확인")
-    void execute_ConcurrentRequests_DeductsCreditsMultipleTimes()
-            throws InterruptedException {
-        // Given
-        int concurrentRequests = 3;
-        ExecutorService executorService = Executors.newFixedThreadPool(concurrentRequests);
+    @DisplayName("비관락 적용 후: 동시 실행 시 Job 중복 생성 방지")
+    void testWithLock_ConcurrentExecution_PreventsDuplicateJobs() throws Exception {
+        log.info("=== 비관락 적용 후 테스트 시작 ===");
+        
+        TestResult result = runConcurrentTest(
+                completeVideoUploadUseCase,
+                "비관락 적용"
+        );
+
+        log.info("비관락 적용 결과: 생성된 Job 개수={}, 성공한 스레드={}, 실패한 스레드={}",
+                result.getJobCount(), result.getSuccessCount(), result.getFailureCount());
+
+        // 비관락 적용 시 1개의 Job만 생성되어야 함
+        assertThat(result.getJobCount())
+                .as("비관락 적용 시 1개의 Job만 생성되어야 함")
+                .isEqualTo(1);
+        
+        // 대부분의 스레드는 실패해야 함 (첫 번째만 성공)
+        assertThat(result.getFailureCount())
+                .as("대부분의 스레드는 실패해야 함")
+                .isGreaterThan(0);
+    }
+
+    @Test
+    @DisplayName("비관락 적용 전후 비교: 중복 생성 방지 효과 검증")
+    void testComparison_WithAndWithoutLock_ShowsImprovement() throws Exception {
+        log.info("=== 비관락 적용 전후 비교 테스트 시작 ===");
+        
+        List<TestResult> withoutLockResults = new ArrayList<>();
+        List<TestResult> withLockResults = new ArrayList<>();
+
+        // 여러 번 반복하여 평균값 계산
+        for (int i = 0; i < TEST_ITERATIONS; i++) {
+            log.info("반복 테스트 {} / {}", i + 1, TEST_ITERATIONS);
+            
+            // 비관락 미적용 테스트
+            TestResult withoutLock = runConcurrentTest(
+                    completeVideoUploadUseCaseWithoutLock,
+                    "비관락 미적용 (반복 " + (i + 1) + ")"
+            );
+            withoutLockResults.add(withoutLock);
+            
+            // 잠시 대기 (DB 상태 초기화)
+            Thread.sleep(100);
+            
+            // 비관락 적용 테스트
+            TestResult withLock = runConcurrentTest(
+                    completeVideoUploadUseCase,
+                    "비관락 적용 (반복 " + (i + 1) + ")"
+            );
+            withLockResults.add(withLock);
+            
+            // 잠시 대기
+            Thread.sleep(100);
+        }
+
+        // 평균값 계산
+        double avgWithoutLock = withoutLockResults.stream()
+                .mapToInt(TestResult::getJobCount)
+                .average()
+                .orElse(0.0);
+        
+        double avgWithLock = withLockResults.stream()
+                .mapToInt(TestResult::getJobCount)
+                .average()
+                .orElse(0.0);
+
+        double avgSuccessWithoutLock = withoutLockResults.stream()
+                .mapToInt(TestResult::getSuccessCount)
+                .average()
+                .orElse(0.0);
+        
+        double avgSuccessWithLock = withLockResults.stream()
+                .mapToInt(TestResult::getSuccessCount)
+                .average()
+                .orElse(0.0);
+
+        log.info("=== 테스트 결과 비교 ===");
+        log.info("비관락 미적용 - 평균 Job 개수: {}, 평균 성공 스레드: {}", avgWithoutLock, avgSuccessWithoutLock);
+        log.info("비관락 적용 - 평균 Job 개수: {}, 평균 성공 스레드: {}", avgWithLock, avgSuccessWithLock);
+        log.info("중복 생성 감소율: {}%", 
+                ((avgWithoutLock - avgWithLock) / avgWithoutLock * 100));
+
+        // 비관락 적용 시 Job 개수가 현저히 줄어들어야 함
+        assertThat(avgWithLock)
+                .as("비관락 적용 시 평균 Job 개수는 1에 가까워야 함")
+                .isLessThanOrEqualTo(2.0); // 허용 오차 고려
+        
+        assertThat(avgWithoutLock)
+                .as("비관락 미적용 시 평균 Job 개수는 1보다 커야 함")
+                .isGreaterThan(1.0);
+    }
+
+    /**
+     * 동시성 테스트 실행
+     */
+    private TestResult runConcurrentTest(
+            Object useCase,
+            String testName) throws Exception {
+        
+        // 테스트용 Video 생성
+        Video testVideo = Video.createForPresignedUpload(
+                testMember.getId(),
+                "test-video.mp4",
+                10_000_000L,
+                ProcessingType.AI_UPSCALING,
+                "videos/test/test-video.mp4",
+                "upload-id-" + System.currentTimeMillis(),
+                LocalDateTime.now().plusHours(1)
+        );
+        testVideo = videoRepository.save(testVideo);
+        Long videoId = testVideo.getId();
+
+        // 기존 Job 정리
+        jobRepository.deleteAll();
+
+        ExecutorService executor = Executors.newFixedThreadPool(CONCURRENT_THREADS);
         CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch completeLatch = new CountDownLatch(concurrentRequests);
+        CountDownLatch endLatch = new CountDownLatch(CONCURRENT_THREADS);
+        
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failureCount = new AtomicInteger(0);
+        List<Future<?>> futures = new ArrayList<>();
 
-        given(videoAdaptor.queryById(100L)).willReturn(testVideo);
-        given(videoService.completeUpload(eq(testVideo), any(VideoMetadata.class)))
-                .willReturn(uploadCompletedVideo);
-        given(creditService.useCreditsForVideoProcessing(any(), any(), any()))
-                .willReturn(testCreditHistory);
-        given(videoService.enqueueForProcessing(any(), any(String.class)))
-                .willReturn(queuedVideo);
-
-        AtomicInteger jobIdCounter = new AtomicInteger(1);
-        given(jobService.createJob(any(), eq(100L), any(), any()))
-                .willAnswer(
-                        invocation -> {
-                            int jobId = jobIdCounter.getAndIncrement();
-                            return Job.builder()
-                                    .id((long) jobId)
-                                    .videoId(100L)
-                                    .memberId(1L)
-                                    .s3Key("videos/1/original/upload-id/20250101120000_test-video.mp4")
-                                    .processingType(ProcessingType.AI_UPSCALING)
-                                    .status(JobStatus.REQUESTED)
-                                    .build();
-                        });
-
-        AtomicInteger creditDeductionCount = new AtomicInteger(0);
-
-        // When
-        for (int i = 0; i < concurrentRequests; i++) {
-            executorService.submit(
-                    () -> {
-                        try {
-                            startLatch.await();
-                            completeVideoUploadUseCase.execute(100L, testRequest, testMember);
-                            creditDeductionCount.incrementAndGet();
-                        } catch (Exception e) {
-                            System.err.println("Request failed: " + e.getMessage());
-                        } finally {
-                            completeLatch.countDown();
-                        }
-                    });
+        // 모든 스레드가 동시에 시작하도록 설정
+        for (int i = 0; i < CONCURRENT_THREADS; i++) {
+            final int threadId = i;
+            Future<?> future = executor.submit(() -> {
+                try {
+                    // 모든 스레드가 동시에 시작하도록 대기
+                    startLatch.await();
+                    
+                    log.debug("[{}] {} - 스레드 {} 시작", testName, threadId, Thread.currentThread().getName());
+                    
+                    // Member를 다시 조회하여 최신 상태 유지
+                    Member currentMember = memberRepository.findById(testMember.getId())
+                            .orElseThrow();
+                    
+                    if (useCase instanceof CompleteVideoUploadUseCase) {
+                        completeVideoUploadUseCase.execute(videoId, testRequest, currentMember);
+                    } else if (useCase instanceof CompleteVideoUploadUseCaseWithoutLock) {
+                        completeVideoUploadUseCaseWithoutLock.execute(videoId, testRequest, currentMember);
+                    }
+                    
+                    successCount.incrementAndGet();
+                    log.debug("[{}] {} - 스레드 {} 성공", testName, threadId, Thread.currentThread().getName());
+                } catch (Exception e) {
+                    failureCount.incrementAndGet();
+                    log.debug("[{}] {} - 스레드 {} 실패: {}", testName, threadId, 
+                            Thread.currentThread().getName(), e.getMessage());
+                } finally {
+                    endLatch.countDown();
+                }
+            });
+            futures.add(future);
         }
 
-        Thread.sleep(100);
+        // 모든 스레드 동시 시작
+        long startTime = System.currentTimeMillis();
         startLatch.countDown();
-        boolean completed = completeLatch.await(10, TimeUnit.SECONDS);
-        executorService.shutdown();
+        
+        // 모든 스레드 완료 대기
+        endLatch.await();
+        long endTime = System.currentTimeMillis();
 
-        // Then
-        assertThat(completed).isTrue();
+        executor.shutdown();
 
-        // 크레딧 차감이 여러 번 호출되었는지 확인
-        int actualCreditDeductions = creditDeductionCount.get();
-        assertThat(actualCreditDeductions)
-                .as("크레딧이 %d번 차감되어야 함 (현재: %d번)", concurrentRequests, actualCreditDeductions)
-                .isEqualTo(concurrentRequests);
+        // 생성된 Job 개수 확인
+        List<Job> createdJobs = jobRepository.findByVideoId(videoId);
+        int jobCount = createdJobs.size();
 
-        verify(creditService, atLeast(concurrentRequests))
-                .useCreditsForVideoProcessing(any(), any(), any());
+        log.info("[{}] 실행 시간: {}ms, 생성된 Job: {}개, 성공: {}개, 실패: {}개",
+                testName, (endTime - startTime), jobCount, 
+                successCount.get(), failureCount.get());
 
-        System.out.println("========================================");
-        System.out.println("크레딧 중복 차감 테스트 결과:");
-        System.out.println("동시 요청 수: " + concurrentRequests);
-        System.out.println("크레딧 차감 횟수: " + actualCreditDeductions);
-        System.out.println("========================================");
+        return new TestResult(jobCount, successCount.get(), failureCount.get(), 
+                endTime - startTime);
     }
 
-    @Test
-    @DisplayName("동시 요청 시 SQS 메시지 전송 횟수 확인")
-    void execute_ConcurrentRequests_SendsMultipleSqsMessages()
-            throws InterruptedException {
-        // Given: JobPublisher의 send 메서드 호출 횟수를 추적하기 위해
-        // 실제로는 JobEventHandler를 통해 JobPublisher가 호출되므로
-        // JobEventHandler.handleCreate 호출 횟수로 확인
-        int concurrentRequests = 4;
-        ExecutorService executorService = Executors.newFixedThreadPool(concurrentRequests);
-        CountDownLatch startLatch = new CountDownLatch(1);
-        CountDownLatch completeLatch = new CountDownLatch(concurrentRequests);
+    /**
+     * 테스트 결과를 담는 내부 클래스
+     */
+    private static class TestResult {
+        private final int jobCount;
+        private final int successCount;
+        private final int failureCount;
+        private final long executionTimeMs;
 
-        given(videoAdaptor.queryById(100L)).willReturn(testVideo);
-        given(videoService.completeUpload(eq(testVideo), any(VideoMetadata.class)))
-                .willReturn(uploadCompletedVideo);
-        given(creditService.useCreditsForVideoProcessing(any(), any(), any()))
-                .willReturn(testCreditHistory);
-        given(videoService.enqueueForProcessing(any(), any(String.class)))
-                .willReturn(queuedVideo);
-
-        AtomicInteger jobIdCounter = new AtomicInteger(1);
-        given(jobService.createJob(any(), eq(100L), any(), any()))
-                .willAnswer(
-                        invocation -> {
-                            int jobId = jobIdCounter.getAndIncrement();
-                            return Job.builder()
-                                    .id((long) jobId)
-                                    .videoId(100L)
-                                    .memberId(1L)
-                                    .s3Key("videos/1/original/upload-id/20250101120000_test-video.mp4")
-                                    .processingType(ProcessingType.AI_UPSCALING)
-                                    .status(JobStatus.REQUESTED)
-                                    .build();
-                        });
-
-        // When
-        for (int i = 0; i < concurrentRequests; i++) {
-            executorService.submit(
-                    () -> {
-                        try {
-                            startLatch.await();
-                            completeVideoUploadUseCase.execute(100L, testRequest, testMember);
-                        } catch (Exception e) {
-                            System.err.println("Request failed: " + e.getMessage());
-                        } finally {
-                            completeLatch.countDown();
-                        }
-                    });
+        public TestResult(int jobCount, int successCount, int failureCount, long executionTimeMs) {
+            this.jobCount = jobCount;
+            this.successCount = successCount;
+            this.failureCount = failureCount;
+            this.executionTimeMs = executionTimeMs;
         }
 
-        Thread.sleep(100);
-        startLatch.countDown();
-        boolean completed = completeLatch.await(10, TimeUnit.SECONDS);
-        executorService.shutdown();
+        public int getJobCount() {
+            return jobCount;
+        }
 
-        // Then
-        assertThat(completed).isTrue();
+        public int getSuccessCount() {
+            return successCount;
+        }
 
-        // JobEventHandler.handleCreate가 여러 번 호출되었는지 확인
-        // 이는 SQS 메시지 전송을 트리거하므로 중복 전송을 의미
-        ArgumentCaptor<com.example.echoshotx.job.application.event.JobCreatedEvent> eventCaptor =
-                ArgumentCaptor.forClass(
-                        com.example.echoshotx.job.application.event.JobCreatedEvent.class);
+        public int getFailureCount() {
+            return failureCount;
+        }
 
-        verify(jobEventHandler, atLeast(concurrentRequests)).handleCreate(eventCaptor.capture());
-
-        List<com.example.echoshotx.job.application.event.JobCreatedEvent> capturedEvents =
-                eventCaptor.getAllValues();
-
-        assertThat(capturedEvents)
-                .as("SQS 메시지 전송 이벤트가 %d번 발생해야 함", concurrentRequests)
-                .hasSizeGreaterThanOrEqualTo(concurrentRequests);
-
-        // 각 이벤트의 jobId가 다른지 확인 (중복 Job 생성 확인)
-        List<Long> jobIds =
-                capturedEvents.stream()
-                        .map(com.example.echoshotx.job.application.event.JobCreatedEvent::getJobId)
-                        .toList();
-
-        System.out.println("========================================");
-        System.out.println("SQS 메시지 중복 전송 테스트 결과:");
-        System.out.println("동시 요청 수: " + concurrentRequests);
-        System.out.println("SQS 전송 이벤트 수: " + capturedEvents.size());
-        System.out.println("생성된 Job ID: " + jobIds);
-        System.out.println("========================================");
+        public long getExecutionTimeMs() {
+            return executionTimeMs;
+        }
     }
 }
+
