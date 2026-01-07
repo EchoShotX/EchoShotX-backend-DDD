@@ -17,7 +17,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 /**
  * SSE (Server-Sent Events) 연결 관리자.
  *
- * <p>회원별 SSE 연결을 관리하고, 실시간 알림을 전송합니다.
+ * <p>
+ * 회원별 SSE 연결을 관리하고, 실시간 알림을 전송합니다.
  */
 @Slf4j
 @Component
@@ -30,7 +31,8 @@ public class SseConnectionManager {
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter createConnection(Long memberId) {
-        SseEmitter existingEmitter = new SseEmitter(DEFAULT_TIMEOUT);
+        // 기존 연결이 있으면 종료 (새 연결 우선)
+        SseEmitter existingEmitter = emitters.get(memberId);
         if (existingEmitter != null) {
             existingEmitter.complete();
             log.info("Existing SSE connection closed for member: {}", memberId);
@@ -128,7 +130,7 @@ public class SseConnectionManager {
      *
      * @return 성공한 전송 수
      */
-	public int sendHeartbeatToAll() {
+    public int sendHeartbeatToAll() {
         int successCount = 0;
         int failCount = 0;
         List<Long> deadMemberIds = new ArrayList<>();
@@ -137,7 +139,7 @@ public class SseConnectionManager {
             try {
                 entry.getValue().send(SseEmitter.event().comment("heartbeat"));
                 successCount++;
-            } catch (IOException e) {
+            } catch (IOException | IllegalStateException e) {
                 deadMemberIds.add(entry.getKey());
                 failCount++;
             }
