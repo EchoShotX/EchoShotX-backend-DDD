@@ -2,11 +2,14 @@ package com.example.echoshotx.notification.application.service;
 
 import com.example.echoshotx.notification.domain.exception.NotificationErrorStatus;
 import com.example.echoshotx.notification.presentation.exception.NotificationHandler;
+
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -20,184 +23,189 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @Component
 public class SseConnectionManager {
 
-  private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60; // 60분
-  private static final String SSE_EVENT_NAME = "notification";
+    private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60; // 60분
+    private static final String SSE_EVENT_NAME = "notification";
 
-  // Key: memberId, Value: List of SseEmitters (다중 디바이스 지원)
-  private final Map<Long, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    // Key: memberId, Value: List of SseEmitters (다중 디바이스 지원)
+    private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-  /**
-   * 새로운 SSE 연결 생성.
-   *
-   * @param memberId 회원 ID
-   * @return SseEmitter
-   */
-  public SseEmitter createConnection(Long memberId) {
-	SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
+    public SseEmitter createConnection(Long memberId) {
+        SseEmitter existingEmitter = new SseEmitter(DEFAULT_TIMEOUT);
+        if (existingEmitter != null) {
+            existingEmitter.complete();
+            log.info("Existing SSE connection closed for member: {}", memberId);
+        }
 
-	// 연결 리스트에 추가
-	emitters.computeIfAbsent(memberId, k -> new CopyOnWriteArrayList<>()).add(emitter);
+        SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
+        emitters.put(memberId, emitter);
 
-	log.info(
-		"SSE connection created for member: {}, total connections: {}",
-		memberId,
-		emitters.get(memberId).size());
+        log.info("SSE connection created for member: {}", memberId);
 
-	// 연결 완료 시 제거
-	emitter.onCompletion(
-		() -> {
-		  removeEmitter(memberId, emitter);
-		  log.info("SSE connection completed for member: {}", memberId);
-		});
+        // 연결 완료 시 제거
+        emitter.onCompletion(
+                () -> {
+                    removeEmitter(memberId);
+                    log.info("SSE connection completed for member: {}", memberId);
+                });
 
-	// 타임아웃 시 제거
-	emitter.onTimeout(
-		() -> {
-		  removeEmitter(memberId, emitter);
-		  log.warn("SSE connection timeout for member: {}", memberId);
-		});
+        // 타임아웃 시 제거
+        emitter.onTimeout(
+                () -> {
+                    removeEmitter(memberId);
+                    log.warn("SSE connection timeout for member: {}", memberId);
+                });
 
-	// 에러 시 제거
-	emitter.onError(
-		e -> {
-		  removeEmitter(memberId, emitter);
-		  log.error("SSE connection error for member: {}, error: {}", memberId, e.getMessage());
-		});
+        // 에러 시 제거
+        emitter.onError(
+                e -> {
+                    removeEmitter(memberId);
+                    log.error("SSE connection error for member: {}, error: {}", memberId, e.getMessage());
+                });
 
-	// 연결 확인용 초기 이벤트 전송
-	try {
-	  emitter.send(SseEmitter.event().name("connected").data("SSE connection established"));
-	} catch (IOException e) {
-	  log.error("Failed to send initial connection event to member: {}", memberId, e);
-	  removeEmitter(memberId, emitter);
-	  throw new NotificationHandler(NotificationErrorStatus.SSE_CONNECTION_FAILED);
-	}
+        // 연결 확인용 초기 이벤트 전송
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("SSE connection established"));
+        } catch (IOException e) {
+            log.error("Failed to send initial connection event to member: {}", memberId, e);
+            removeEmitter(memberId);
+            throw new NotificationHandler(NotificationErrorStatus.SSE_CONNECTION_FAILED);
+        }
 
-	return emitter;
-  }
+        return emitter;
+    }
 
-  /**
-   * 특정 회원에게 알림 전송.
-   *
-   * @param memberId 회원 ID
-   * @param data 전송할 데이터
-   * @return 전송 성공 여부
-   */
-  public boolean sendToMember(Long memberId, Object data) {
-	List<SseEmitter> memberEmitters = emitters.get(memberId);
+    /**
+     * 특정 회원에게 알림 전송.
+     *
+     * @param memberId 회원 ID
+     * @param data     전송할 데이터
+     * @return 전송 성공 여부
+     */
+    public boolean sendToMember(Long memberId, Object data) {
+        SseEmitter emitter = emitters.get(memberId);
 
-	if (memberEmitters == null || memberEmitters.isEmpty()) {
-	  log.warn("No active SSE connections for member: {}", memberId);
-	  return false;
-	}
+        if (emitter == null) {
+            log.warn("No active SSE connection for member: {}", memberId);
+            return false;
+        }
 
-	boolean hasSuccessfulSend = false;
-	List<SseEmitter> deadEmitters = new CopyOnWriteArrayList<>();
+        try {
+            emitter.send(SseEmitter.event().name(SSE_EVENT_NAME).data(data));
+            log.info("Notification sent to member: {}", memberId);
+            return true;
+        } catch (IOException e) {
+            log.error("Failed to send notification to member: {}, removing dead emitter", memberId, e);
+            removeEmitter(memberId);
+            return false;
+        }
+    }
 
-	for (SseEmitter emitter : memberEmitters) {
-	  try {
-		emitter.send(SseEmitter.event().name(SSE_EVENT_NAME).data(data));
-		hasSuccessfulSend = true;
-		log.info("Notification sent to member: {}", memberId);
-	  } catch (IOException e) {
-		log.error(
-			"Failed to send notification to member: {}, removing dead emitter", memberId, e);
-		deadEmitters.add(emitter);
-	  }
-	}
+    /**
+     * 여러 회원에게 브로드캐스트.
+     *
+     * @param memberIds 회원 ID 목록
+     * @param data      전송할 데이터
+     */
+    public void broadcast(List<Long> memberIds, Object data) {
+        log.info("Broadcasting notification to {} members", memberIds.size());
+        for (Long memberId : memberIds) {
+            sendToMember(memberId, data);
+        }
+    }
 
-	// 실패한 emitter 제거
-	deadEmitters.forEach(e -> removeEmitter(memberId, e));
+    /**
+     * 모든 연결된 회원에게 브로드캐스트.
+     *
+     * @param data 전송할 데이터
+     */
+    public void broadcastToAll(Object data) {
+        log.info("Broadcasting notification to all {} members", emitters.size());
+        emitters.keySet().forEach(memberId -> sendToMember(memberId, data));
+    }
 
-	return hasSuccessfulSend;
-  }
+    /**
+     * 모든 연결에 Heartbeat 전송하여 dead connection 조기 감지
+     *
+     * @return 성공한 전송 수
+     */
+	public int sendHeartbeatToAll() {
+        int successCount = 0;
+        int failCount = 0;
+        List<Long> deadMemberIds = new ArrayList<>();
 
-  /**
-   * 여러 회원에게 브로드캐스트.
-   *
-   * @param memberIds 회원 ID 목록
-   * @param data 전송할 데이터
-   */
-  public void broadcast(List<Long> memberIds, Object data) {
-	log.info("Broadcasting notification to {} members", memberIds.size());
-	for (Long memberId : memberIds) {
-	  sendToMember(memberId, data);
-	}
-  }
+        for (Map.Entry<Long, SseEmitter> entry : emitters.entrySet()) {
+            try {
+                entry.getValue().send(SseEmitter.event().comment("heartbeat"));
+                successCount++;
+            } catch (IOException e) {
+                deadMemberIds.add(entry.getKey());
+                failCount++;
+            }
+        }
 
-  /**
-   * 모든 연결된 회원에게 브로드캐스트.
-   *
-   * @param data 전송할 데이터
-   */
-  public void broadcastToAll(Object data) {
-	log.info("Broadcasting notification to all {} members", emitters.size());
-	emitters.keySet().forEach(memberId -> sendToMember(memberId, data));
-  }
+        // dead emitter 즉시 제거
+        deadMemberIds.forEach(this::removeEmitter);
 
-  /**
-   * 특정 회원의 연결 해제.
-   *
-   * @param memberId 회원 ID
-   */
-  public void disconnectMember(Long memberId) {
-	List<SseEmitter> memberEmitters = emitters.remove(memberId);
-	if (memberEmitters != null) {
-	  memberEmitters.forEach(SseEmitter::complete);
-	  log.info(
-		  "Disconnected all SSE connections for member: {}, count: {}",
-		  memberId,
-		  memberEmitters.size());
-	}
-  }
+        if (failCount > 0) {
+            log.info("Heartbeat completed: success={}, removed={} dead connections",
+                    successCount, failCount);
+        }
 
-  /**
-   * 특정 회원의 활성 연결 수 조회.
-   *
-   * @param memberId 회원 ID
-   * @return 연결 수
-   */
-  public int getConnectionCount(Long memberId) {
-	List<SseEmitter> memberEmitters = emitters.get(memberId);
-	return memberEmitters != null ? memberEmitters.size() : 0;
-  }
+        return successCount;
+    }
 
-  /**
-   * 전체 활성 연결 수 조회.
-   *
-   * @return 전체 연결 수
-   */
-  public int getTotalConnectionCount() {
-	return emitters.values().stream().mapToInt(List::size).sum();
-  }
+    /**
+     * 특정 회원의 연결 해제.
+     *
+     * @param memberId 회원 ID
+     */
+    public void disconnectMember(Long memberId) {
+        SseEmitter emitter = emitters.remove(memberId);
+        if (emitter != null) {
+            emitter.complete();
+            log.info("Disconnected SSE connection for member: {}", memberId);
+        }
+    }
 
-  /**
-   * 특정 회원이 연결되어 있는지 확인.
-   *
-   * @param memberId 회원 ID
-   * @return 연결 여부
-   */
-  public boolean isConnected(Long memberId) {
-	List<SseEmitter> memberEmitters = emitters.get(memberId);
-	return memberEmitters != null && !memberEmitters.isEmpty();
-  }
+    /**
+     * 특정 회원의 활성 연결 수 조회
+     */
+    public int getConnectionCount(Long memberId) {
+        return emitters.containsKey(memberId) ? 1 : 0;
+    }
 
-  /** Emitter 제거 (내부 메서드). */
-  private void removeEmitter(Long memberId, SseEmitter emitter) {
-	List<SseEmitter> memberEmitters = emitters.get(memberId);
-	if (memberEmitters != null) {
-	  memberEmitters.remove(emitter);
-	  // 리스트가 비어있으면 키 자체를 제거
-	  if (memberEmitters.isEmpty()) {
-		emitters.remove(memberId);
-	  }
-	}
-  }
+    /**
+     * 전체 활성 연결 수 조회.
+     *
+     * @return 전체 연결 수
+     */
+    public int getTotalConnectionCount() {
+        return emitters.size();
+    }
 
-  /** 모든 연결 해제 (서버 종료 시 사용). */
-  public void disconnectAll() {
-	log.info("Disconnecting all SSE connections, total members: {}", emitters.size());
-	emitters.forEach((memberId, emitterList) -> emitterList.forEach(SseEmitter::complete));
-	emitters.clear();
-  }
+    /**
+     * 특정 회원이 연결되어 있는지 확인.
+     *
+     * @param memberId 회원 ID
+     * @return 연결 여부
+     */
+    public boolean isConnected(Long memberId) {
+        return emitters.containsKey(memberId);
+    }
+
+    /**
+     * Emitter 제거 (내부 메서드).
+     */
+    private void removeEmitter(Long memberId) {
+        emitters.remove(memberId);
+    }
+
+    /**
+     * 모든 연결 해제 (서버 종료 시 사용).
+     */
+    public void disconnectAll() {
+        log.info("Disconnecting all SSE connections, total: {}", emitters.size());
+        emitters.values().forEach(SseEmitter::complete);
+        emitters.clear();
+    }
 }
