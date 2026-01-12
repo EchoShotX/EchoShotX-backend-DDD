@@ -6,6 +6,7 @@ import com.example.echoshotx.notification.domain.entity.NotificationType;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -62,4 +63,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
   /** 특정 크레딧 히스토리 ID에 연결된 알림을 생성일 기준 내림차순으로 조회한다. */
   List<Notification> findByCreditHistoryIdOrderByCreatedDateDesc(Long creditHistoryId);
+
+  /** 특정 회원의 모든 미읽음 알림을 일괄 읽음 처리함 **/
+  @Modifying(clearAutomatically = true) // bulk update 후 영속성 컨텍스트 자동으로 clear
+  @Query("UPDATE Notification n SET n.isRead = true WHERE n.memberId = :memberId AND n.isRead = false")
+  int bulkMarkAsReadByMemberId(@Param("memberId") Long memberId);
+
 }
