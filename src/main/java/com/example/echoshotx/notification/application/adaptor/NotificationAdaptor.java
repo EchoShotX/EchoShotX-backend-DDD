@@ -113,6 +113,11 @@ public class NotificationAdaptor {
 	return notificationRepository.saveAll(notifications);
   }
 
+  @Transactional
+  public int bulkMarkAsReadByMemberId(Long memberId) {
+      return notificationRepository.bulkMarkAsReadByMemberId(memberId);
+  }
+
   /** ID로 알림을 삭제한다. */
   @Transactional
   public void delete(Long notificationId) {
