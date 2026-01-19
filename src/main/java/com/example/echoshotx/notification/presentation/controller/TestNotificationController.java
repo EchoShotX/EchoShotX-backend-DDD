@@ -62,6 +62,8 @@ public class TestNotificationController {
                     notification);
         }
 
+        sseConnectionManager.sendToMember(request.getTargetMemberId(), response);
+
         return ApiResponseDto.onSuccess(response);
     }
 
