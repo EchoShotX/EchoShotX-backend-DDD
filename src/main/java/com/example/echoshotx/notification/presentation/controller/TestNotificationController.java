@@ -42,7 +42,7 @@ public class TestNotificationController {
     @Operation(summary = "테스트 알림 발송", description = "특정 회원에게 테스트 알림을 발송합니다. "
             + "SSE 연결이 있으면 실시간으로 전송되며, 없으면 DB에만 저장됩니다.")
     @PostMapping("/send")
-    public ApiResponseDto<TestNotificationResponse> sendTestNotification(
+    public ApiResponseDto<NotificationResponse> sendTestNotification(
             @Valid @RequestBody TestNotificationRequest request) {
 
         log.info("Test notification request: targetMemberId={}", request.getTargetMemberId());
@@ -53,15 +53,13 @@ public class TestNotificationController {
                 request.getContent());
 
         // 전송 상태에 따른 응답 생성
-        TestNotificationResponse response;
+        NotificationResponse response;
         if (notification.getStatus() == NotificationStatus.SENT) {
-            response = TestNotificationResponse.success(
-                    notification.getId(),
-                    notification.getMemberId());
+            response = NotificationResponse.success(
+                    notification);
         } else {
-            response = TestNotificationResponse.pending(
-                    notification.getId(),
-                    notification.getMemberId());
+            response = NotificationResponse.success(
+                    notification);
         }
 
         return ApiResponseDto.onSuccess(response);
