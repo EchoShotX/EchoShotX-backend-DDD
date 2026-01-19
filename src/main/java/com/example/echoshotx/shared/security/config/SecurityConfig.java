@@ -89,7 +89,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorizeRequest -> {
                     authorizeRequest
                             .requestMatchers("/", "/.well-known/**", "/css/**",
-                                    "/*.ico", "/error", "/images/**").permitAll()
+                                    "/*.ico", "/error", "/images/**", "/actuator/health").permitAll()
                             .requestMatchers(permitAllRequest()).permitAll()        //비인증 api 허용 처리
                             .requestMatchers(authRelatedEndpoints()).permitAll()
                             .requestMatchers(additionalSwaggerRequests()).permitAll()
