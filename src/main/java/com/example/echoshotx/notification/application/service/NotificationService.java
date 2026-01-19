@@ -30,8 +30,7 @@ public class NotificationService {
     public Notification createAndSendVideoNotification(
             Long memberId, Long videoId, NotificationType type, String title, String content) {
 
-        Notification notification =
-                Notification.createVideoNotification(memberId, videoId, type, title, content);
+        Notification notification = Notification.createVideoNotification(memberId, videoId, type, title, content);
 
         notification = notificationAdaptor.save(notification);
         log.info(
@@ -54,6 +53,22 @@ public class NotificationService {
 
         notification = notificationAdaptor.save(notification);
         log.info("System notification created: id={}, memberId={}", notification.getId(), memberId);
+
+        sendNotificationRealtime(notification);
+        return notification;
+    }
+
+    /**
+     * 테스트 알림 생성 및 전송 (관리자용).
+     * DB에 저장되며 일반 알림과 동일하게 동작합니다.
+     */
+    public Notification createAndSendTestNotification(
+            Long memberId, String title, String content) {
+
+        Notification notification = Notification.createTestNotification(memberId, title, content);
+
+        notification = notificationAdaptor.save(notification);
+        log.info("Test notification created: id={}, memberId={}", notification.getId(), memberId);
 
         sendNotificationRealtime(notification);
         return notification;
@@ -152,8 +167,7 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public List<NotificationResponse> getNotificationsByType(
             Long memberId, NotificationType type) {
-        List<Notification> notifications =
-                notificationAdaptor.queryByMemberIdAndType(memberId, type);
+        List<Notification> notifications = notificationAdaptor.queryByMemberIdAndType(memberId, type);
         return notifications.stream().map(NotificationResponse::from).collect(Collectors.toList());
     }
 
@@ -162,8 +176,7 @@ public class NotificationService {
      */
     public void retryFailedNotifications() {
         LocalDateTime retryAfter = LocalDateTime.now().minusMinutes(5);
-        List<Notification> failedNotifications =
-                notificationAdaptor.queryFailedNotificationsForRetry(retryAfter);
+        List<Notification> failedNotifications = notificationAdaptor.queryFailedNotificationsForRetry(retryAfter);
 
         log.info("Retrying {} failed notifications", failedNotifications.size());
 
@@ -208,14 +221,13 @@ public class NotificationService {
             String currentStep) {
 
         // 진행률 응답 생성
-        VideoProgressResponse response =
-                VideoProgressResponse.builder()
-                        .videoId(videoId)
-                        .progressPercentage(progressPercentage)
-                        .estimatedTimeLeftSeconds(estimatedTimeLeft)
-                        .currentStep(currentStep)
-                        .timestamp(LocalDateTime.now())
-                        .build();
+        VideoProgressResponse response = VideoProgressResponse.builder()
+                .videoId(videoId)
+                .progressPercentage(progressPercentage)
+                .estimatedTimeLeftSeconds(estimatedTimeLeft)
+                .currentStep(currentStep)
+                .timestamp(LocalDateTime.now())
+                .build();
 
         // SSE로 실시간 전송 (DB에 저장하지 않음)
         boolean sent = sseConnectionManager.sendToMember(memberId, response);
