@@ -70,6 +70,9 @@ dependencies {
 	implementation 'io.awspring.cloud:spring-cloud-aws-starter-sqs'
 	implementation platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.1.1")
 
+	// health
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
+
 	compileOnly 'org.projectlombok:lombok'
 	testCompileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
