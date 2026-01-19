@@ -22,7 +22,7 @@ public class JobMessage {
     private final String s3Key;
 
     /**
-     * 작업 유형 (예: UPSCALE, THUMBNAIL_GENERATION 등)
+     * 작업 유형 (예: AI_UPSCALING 등)
      */
     private final String processingType;
 

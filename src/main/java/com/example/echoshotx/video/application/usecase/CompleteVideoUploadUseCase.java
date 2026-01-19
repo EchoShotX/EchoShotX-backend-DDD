@@ -10,12 +10,15 @@ import com.example.echoshotx.shared.annotation.usecase.UseCase;
 import com.example.echoshotx.video.application.adaptor.VideoAdaptor;
 import com.example.echoshotx.video.application.service.VideoService;
 import com.example.echoshotx.video.domain.entity.Video;
+import com.example.echoshotx.video.domain.entity.VideoStatus;
+import com.example.echoshotx.video.domain.exception.VideoErrorStatus;
 import com.example.echoshotx.video.domain.vo.VideoMetadata;
 import com.example.echoshotx.video.presentation.dto.request.CompleteUploadRequest;
 import com.example.echoshotx.video.presentation.dto.response.CompleteUploadResponse;
 
 import java.util.UUID;
 
+import com.example.echoshotx.video.presentation.exception.VideoHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,27 +49,20 @@ public class CompleteVideoUploadUseCase {
             Long videoId, CompleteUploadRequest request, Member member) {
 
         // 1. 비디오 조회 및 권한 검증
-        Video video = videoAdaptor.queryById(videoId);
+        Video video = videoAdaptor.queryByIdWithLock(videoId);
         video.validateMember(member);
 
-        // 2. VideoMetadata 생성
-        VideoMetadata metadata =
-                VideoMetadata.builder()
-                        .durationSeconds(request.getDurationSeconds())
-                        .width(request.getWidth())
-                        .height(request.getHeight())
-                        .codec(request.getCodec())
-                        .bitrate(request.getBitrate())
-                        .frameRate(request.getFrameRate())
-                        .build();
+        // 2. 상태 검증
+        if (video.getStatus() != VideoStatus.PENDING_UPLOAD) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_ALREADY_PROCESSED);
+        }
 
-        // 3. 업로드 완료 처리 (PENDING_UPLOAD → UPLOAD_COMPLETED)
+        VideoMetadata metadata = createVideoMetadata(request);
+        // 3. 업로드 완료 처리
         video = videoService.completeUpload(video, metadata);
-        log.info("Video upload completed: videoId={}, memberId={}", videoId, member.getId());
 
         // 4. 크레딧 차감
         creditService.useCreditsForVideoProcessing(member, video, video.getProcessingType());
-        log.info("Credits deducted for video processing: videoId={}", videoId);
 
         // 5. SQS에 메시지 전송
         String sqsMessageId = sendToProcessingQueue(member, video);
@@ -90,5 +86,16 @@ public class CompleteVideoUploadUseCase {
 		jobEventHandler.handleCreate(event);
         // Mock implementation
         return UUID.randomUUID().toString();
+    }
+
+    private VideoMetadata createVideoMetadata(CompleteUploadRequest request) {
+        return VideoMetadata.builder()
+                .durationSeconds(request.getDurationSeconds())
+                .width(request.getWidth())
+                .height(request.getHeight())
+                .codec(request.getCodec())
+                .bitrate(request.getBitrate())
+                .frameRate(request.getFrameRate())
+                .build();
     }
 }
