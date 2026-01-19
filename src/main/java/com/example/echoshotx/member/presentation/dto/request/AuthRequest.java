@@ -13,4 +13,11 @@ public class AuthRequest {
         private String refreshToken;
     }
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Logout {
+        private String refreshToken;
+    }
+
 }
