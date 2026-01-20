@@ -15,12 +15,14 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * 테스트용 알림 API 컨트롤러.
@@ -113,5 +115,14 @@ public class TestNotificationController {
 
         return ApiResponseDto.onSuccess(
                 String.format("%d개의 연결에 브로드캐스트를 전송했습니다.", totalConnections));
+    }
+
+    @Operation(summary = "🔧 테스트용 SSE 구독 (토큰 불필요)", 
+            description = "토큰 없이 memberId를 직접 지정하여 SSE 연결을 테스트합니다. " +
+                    "curl -N 'http://서버주소/test/notifications/subscribe/1' 로 테스트 가능합니다.")
+    @GetMapping(value = "/subscribe/{memberId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter testSubscribe(@PathVariable Long memberId) {
+        log.info("🔧 [TEST] SSE connection request for memberId: {}", memberId);
+        return sseConnectionManager.createConnection(memberId);
     }
 }

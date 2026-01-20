@@ -3,6 +3,13 @@ spring:
     active:
       - local
   datasource:
+
+    hikari:
+      maximum-pool-size: 30
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
@@ -15,6 +22,7 @@ spring:
 
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     defer-datasource-initialization: true
