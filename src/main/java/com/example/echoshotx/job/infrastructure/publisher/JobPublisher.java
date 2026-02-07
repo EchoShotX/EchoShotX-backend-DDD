@@ -122,6 +122,6 @@ public class JobPublisher {
             throw new RuntimeException("Failed to serialize SQS message", e);
         }
     }
-    }
+
 
 }
