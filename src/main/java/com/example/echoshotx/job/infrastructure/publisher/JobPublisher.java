@@ -68,6 +68,10 @@ public class JobPublisher {
 
     public void send(JobMessage message) {
         String body = generateMessageBody(message);
+        
+        // 전송 전 로깅 추가
+        log.info("Preparing SQS message: jobId={}, memberId={}, processingType={}, s3Key={}", 
+                message.getJobId(), message.getMemberId(), message.getProcessingType(), message.getS3Key());
 
         SendMessageRequest.Builder builder = SendMessageRequest.builder()
                 .queueUrl(awsProps.getSqs().getQueueUrl())
@@ -92,12 +96,32 @@ public class JobPublisher {
         log.info("SQS message sent: {}", body);
     }
 
+    private void validateMessage(JobMessage message) {
+        if (message.getJobId() == null) {
+            throw new IllegalArgumentException("jobId cannot be null");
+        }
+        if (message.getMemberId() == null) {
+            throw new IllegalArgumentException("memberId cannot be null");
+        }
+        if (message.getProcessingType() == null || message.getProcessingType().isBlank()) {
+            throw new IllegalArgumentException("processingType cannot be null or empty");
+        }
+        if (message.getS3Key() == null || message.getS3Key().isBlank()) {
+            throw new IllegalArgumentException("s3Key cannot be null or empty");
+        }
+    }
+
     private String generateMessageBody(JobMessage message) {
         try {
-            return objectMapper.writeValueAsString(message);
+            String jsonBody = objectMapper.writeValueAsString(message);
+            log.info("Generated SQS message body: {}", jsonBody);
+            return jsonBody;
         } catch (JsonProcessingException e) {
+            log.error("Failed to serialize SQS message. jobId={}, processingType={}", 
+                    message.getJobId(), message.getProcessingType(), e);
             throw new RuntimeException("Failed to serialize SQS message", e);
         }
+    }
     }
 
 }
