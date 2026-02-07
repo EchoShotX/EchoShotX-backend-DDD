@@ -39,8 +39,8 @@ public class VideoService {
             String fileName,
             long fileSize,
             ProcessingType processingType,
-            String uploadId,
             String s3Key,
+            String uploadId,
             LocalDateTime expiresAt) {
 
         Video video =
