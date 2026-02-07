@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,40 +26,39 @@ public class SseConnectionManager {
     private static final Long DEFAULT_TIMEOUT = 60L * 1000 * 60; // 60분
     private static final String SSE_EVENT_NAME = "notification";
 
-    // Key: memberId, Value: List of SseEmitters (다중 디바이스 지원)
+    // Key: memberId, Value: SseEmitter (단일 디바이스)
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
     public SseEmitter createConnection(Long memberId) {
-        // 기존 연결이 있으면 종료 (새 연결 우선)
-        SseEmitter existingEmitter = emitters.get(memberId);
-        if (existingEmitter != null) {
-            existingEmitter.complete();
-            log.info("Existing SSE connection closed for member: {}", memberId);
-        }
-
         SseEmitter emitter = new SseEmitter(DEFAULT_TIMEOUT);
-        emitters.put(memberId, emitter);
+        
+        // 기존 연결이 있어도 강제 종료하지 않음 - 그냥 새 연결로 교체
+        // 기존 emitter는 자연스럽게 timeout/completion 처리됨
+        SseEmitter oldEmitter = emitters.put(memberId, emitter);
+        if (oldEmitter != null) {
+            log.info("Replacing existing SSE connection for member: {} (old connection will timeout naturally)", memberId);
+        }
 
         log.info("SSE connection created for member: {}", memberId);
 
-        // 연결 완료 시 제거
+        // 연결 완료 시 제거 (현재 활성 emitter인 경우만)
         emitter.onCompletion(
                 () -> {
-                    removeEmitter(memberId);
+                    removeEmitterIfMatch(memberId, emitter);
                     log.info("SSE connection completed for member: {}", memberId);
                 });
 
-        // 타임아웃 시 제거
+        // 타임아웃 시 제거 (현재 활성 emitter인 경우만)
         emitter.onTimeout(
                 () -> {
-                    removeEmitter(memberId);
+                    removeEmitterIfMatch(memberId, emitter);
                     log.warn("SSE connection timeout for member: {}", memberId);
                 });
 
-        // 에러 시 제거
+        // 에러 시 제거 (현재 활성 emitter인 경우만)
         emitter.onError(
                 e -> {
-                    removeEmitter(memberId);
+                    removeEmitterIfMatch(memberId, emitter);
                     log.error("SSE connection error for member: {}, error: {}", memberId, e.getMessage());
                 });
 
@@ -69,7 +67,7 @@ public class SseConnectionManager {
             emitter.send(SseEmitter.event().name("connected").data("SSE connection established"));
         } catch (IOException e) {
             log.error("Failed to send initial connection event to member: {}", memberId, e);
-            removeEmitter(memberId);
+            removeEmitterIfMatch(memberId, emitter);
             throw new NotificationHandler(NotificationErrorStatus.SSE_CONNECTION_FAILED);
         }
 
@@ -95,7 +93,7 @@ public class SseConnectionManager {
             emitter.send(SseEmitter.event().name(SSE_EVENT_NAME).data(data));
             log.info("Notification sent to member: {}", memberId);
             return true;
-        } catch (IOException e) {
+        } catch (IOException | IllegalStateException e) {
             log.error("Failed to send notification to member: {}, removing dead emitter", memberId, e);
             removeEmitter(memberId);
             return false;
@@ -200,6 +198,14 @@ public class SseConnectionManager {
      */
     private void removeEmitter(Long memberId) {
         emitters.remove(memberId);
+    }
+
+    /**
+     * 특정 Emitter가 현재 활성 emitter인 경우에만 제거.
+     * 이미 새 연결로 교체된 경우 이전 emitter의 콜백이 새 emitter를 제거하지 않도록 함.
+     */
+    private void removeEmitterIfMatch(Long memberId, SseEmitter emitter) {
+        emitters.remove(memberId, emitter);
     }
 
     /**
