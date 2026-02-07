@@ -215,6 +215,9 @@ public class Video extends BaseTimeEntity {
 
     /**
      * 처리 진행률 업데이트.
+     *
+     * <p>첫 번째 진행률 업데이트가 오면 자동으로 QUEUED → PROCESSING 상태로 전환한다.
+     * 이는 AI Worker가 실제로 처리를 시작했음을 의미한다.
      */
     public void updateProcessingProgress(
             Integer progressPercentage, Integer estimatedTimeLeft, String currentStep) {
@@ -224,6 +227,12 @@ public class Video extends BaseTimeEntity {
 
         if (progressPercentage != null && (progressPercentage < 0 || progressPercentage > 100)) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_PROGRESS_PERCENTAGE);
+        }
+
+        // QUEUED 상태에서 첫 진행률 업데이트가 오면 PROCESSING으로 자동 전환
+        if (this.status == VideoStatus.QUEUED) {
+            this.status = VideoStatus.PROCESSING;
+            this.processingStartedAt = LocalDateTime.now();
         }
 
         this.processingProgressPercentage = progressPercentage;
@@ -246,9 +255,14 @@ public class Video extends BaseTimeEntity {
 
     /**
      * 처리 실패.
+     *
+     * <p>AI 서버에서 처리 시작 전에도 실패할 수 있으므로 (예: 임시 디렉토리 권한 문제),
+     * UPLOAD_COMPLETED, QUEUED, PROCESSING 상태에서 모두 실패 처리가 가능하다.
      */
     public void failProcessing(String errorMessage) {
-        if (this.status != VideoStatus.PROCESSING && this.status != VideoStatus.QUEUED) {
+        if (this.status != VideoStatus.PROCESSING
+                && this.status != VideoStatus.QUEUED
+                && this.status != VideoStatus.UPLOAD_COMPLETED) {
             throw new VideoHandler(VideoErrorStatus.VIDEO_INVALID_STATUS_TRANSITION);
         }
         this.status = VideoStatus.FAILED;
