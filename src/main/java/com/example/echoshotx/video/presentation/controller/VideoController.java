@@ -80,10 +80,11 @@ public class VideoController {
   public ApiResponseDto<CompleteUploadResponse> completeUpload(
 	  @PathVariable Long videoId,
 	  @Valid @RequestBody CompleteUploadRequest request,
+	  @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
 	  @CurrentMember Member member) {
 
 	CompleteUploadResponse response =
-		completeVideoUploadUseCase.execute(videoId, request, member);
+		completeVideoUploadUseCase.execute(videoId, request, member, idempotencyKey);
 	return ApiResponseDto.onSuccess(response);
   }
 

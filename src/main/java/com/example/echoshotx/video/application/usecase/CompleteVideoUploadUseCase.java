@@ -2,12 +2,13 @@ package com.example.echoshotx.video.application.usecase;
 
 import com.example.echoshotx.credit.application.service.CreditService;
 import com.example.echoshotx.job.application.event.JobCreatedEvent;
-import com.example.echoshotx.job.application.handler.JobEventHandler;
 import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.domain.entity.Job;
 import com.example.echoshotx.member.domain.entity.Member;
 import com.example.echoshotx.shared.annotation.usecase.UseCase;
+import com.example.echoshotx.shared.redis.service.RedisLockService;
 import com.example.echoshotx.video.application.adaptor.VideoAdaptor;
+import com.example.echoshotx.video.application.service.VideoUploadIdempotencyService;
 import com.example.echoshotx.video.application.service.VideoService;
 import com.example.echoshotx.video.domain.entity.Video;
 import com.example.echoshotx.video.domain.entity.VideoStatus;
@@ -16,12 +17,16 @@ import com.example.echoshotx.video.domain.vo.VideoMetadata;
 import com.example.echoshotx.video.presentation.dto.request.CompleteUploadRequest;
 import com.example.echoshotx.video.presentation.dto.response.CompleteUploadResponse;
 
+import java.time.Duration;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.example.echoshotx.video.presentation.exception.VideoHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 /**
  * 클라이언트가 S3 업로드 완료 후 호출하는 UseCase.
@@ -39,14 +44,83 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CompleteVideoUploadUseCase {
 
+    private static final Duration REDIS_LOCK_TTL = Duration.ofSeconds(20);
+    private static final String REDIS_LOCK_KEY_PREFIX = "video:complete:";
+
     private final VideoAdaptor videoAdaptor;
     private final VideoService videoService;
     private final CreditService creditService;
     private final JobService jobService;
-    private final JobEventHandler jobEventHandler;
+    private final VideoUploadIdempotencyService idempotencyService;
+    private final RedisLockService redisLockService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public CompleteUploadResponse execute(
             Long videoId, CompleteUploadRequest request, Member member) {
+        return execute(videoId, request, member, null);
+    }
+
+    public CompleteUploadResponse execute(
+            Long videoId,
+            CompleteUploadRequest request,
+            Member member,
+            String idempotencyKey) {
+
+        String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
+        String requestHash = null;
+        if (normalizedKey != null) {
+            requestHash = idempotencyService.createRequestHash(videoId, request);
+            Optional<CompleteUploadResponse> cachedResponse =
+                    idempotencyService.findSuccessResponse(
+                            member.getId(), videoId, normalizedKey, requestHash);
+            if (cachedResponse.isPresent()) {
+                return cachedResponse.get();
+            }
+        }
+
+        if (normalizedKey == null) {
+            return processCompleteUpload(videoId, request, member, null, null);
+        }
+
+        String lockKey = REDIS_LOCK_KEY_PREFIX + videoId;
+        String lockToken = UUID.randomUUID().toString();
+        boolean acquired = false;
+
+        try {
+            acquired = redisLockService.tryLock(lockKey, lockToken, REDIS_LOCK_TTL);
+        } catch (RuntimeException e) {
+            log.warn("Redis lock acquire failed. fallback to DB lock. key={}", lockKey, e);
+        }
+
+        if (!acquired) {
+            Optional<CompleteUploadResponse> retryCachedResponse =
+                    idempotencyService.findSuccessResponse(
+                            member.getId(), videoId, normalizedKey, requestHash);
+            if (retryCachedResponse.isPresent()) {
+                return retryCachedResponse.get();
+            }
+            log.info("Redis lock not acquired. continue with DB lock. key={}", lockKey);
+        }
+
+        try {
+            return processCompleteUpload(videoId, request, member, normalizedKey, requestHash);
+        } finally {
+            if (acquired) {
+                try {
+                    redisLockService.unlock(lockKey, lockToken);
+                } catch (RuntimeException e) {
+                    log.warn("Redis unlock failed. key={}", lockKey, e);
+                }
+            }
+        }
+    }
+
+    private CompleteUploadResponse processCompleteUpload(
+            Long videoId,
+            CompleteUploadRequest request,
+            Member member,
+            String normalizedKey,
+            String requestHash) {
 
         // 1. 비디오 조회 및 권한 검증
         Video video = videoAdaptor.queryByIdWithLock(videoId);
@@ -54,7 +128,14 @@ public class CompleteVideoUploadUseCase {
 
         // 2. 상태 검증
         if (video.getStatus() != VideoStatus.PENDING_UPLOAD) {
-            throw new VideoHandler(VideoErrorStatus.VIDEO_ALREADY_PROCESSED);
+            if (normalizedKey == null) {
+                throw new VideoHandler(VideoErrorStatus.VIDEO_ALREADY_PROCESSED);
+            }
+
+            CompleteUploadResponse response = CompleteUploadResponse.from(video);
+            idempotencyService.saveSuccessResponse(
+                    member.getId(), videoId, normalizedKey, requestHash, response);
+            return response;
         }
 
         VideoMetadata metadata = createVideoMetadata(request);
@@ -71,7 +152,14 @@ public class CompleteVideoUploadUseCase {
         // 6. 처리 대기열에 추가 및 알림 발행 (UPLOAD_COMPLETED → QUEUED)
         video = videoService.enqueueForProcessing(video, sqsMessageId);
 
-        return CompleteUploadResponse.from(video);
+        CompleteUploadResponse response = CompleteUploadResponse.from(video);
+
+        if (normalizedKey != null) {
+            idempotencyService.saveSuccessResponse(
+                    member.getId(), videoId, normalizedKey, requestHash, response);
+        }
+
+        return response;
     }
 
     private String sendToProcessingQueue(Member member, Video video) {
@@ -83,9 +171,16 @@ public class CompleteVideoUploadUseCase {
 				.memberId(member.getId())
 				.s3Key(job.getS3Key())
 				.build();
-		jobEventHandler.handleCreate(event);
+		eventPublisher.publishEvent(event);
         // Mock implementation
         return UUID.randomUUID().toString();
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (!StringUtils.hasText(idempotencyKey)) {
+            return null;
+        }
+        return idempotencyKey.trim();
     }
 
     private VideoMetadata createVideoMetadata(CompleteUploadRequest request) {

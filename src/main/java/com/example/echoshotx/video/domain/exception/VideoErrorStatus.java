@@ -43,6 +43,10 @@ public enum VideoErrorStatus implements BaseCode {
     VIDEO_NOT_COMPLETED(BAD_REQUEST, 4330, "비디오 처리가 완료되지 않았습니다."),
     VIDEO_PROCESSED_FILE_NOT_EXISTS(BAD_REQUEST, 4331, "처리된 비디오 파일이 존재하지 않습니다."),
     VIDEO_ALREADY_PROCESSED(BAD_REQUEST, 4332, "이미 처리된 비디오입니다."),
+    VIDEO_IDEMPOTENCY_KEY_CONFLICT(CONFLICT, 4333, "동일한 멱등 키에 다른 요청 본문이 전달되었습니다."),
+    VIDEO_IDEMPOTENCY_SERIALIZATION_FAILED(INTERNAL_SERVER_ERROR, 4334, "멱등 응답 직렬화에 실패했습니다."),
+    VIDEO_IDEMPOTENCY_DESERIALIZATION_FAILED(INTERNAL_SERVER_ERROR, 4335, "멱등 응답 역직렬화에 실패했습니다."),
+    VIDEO_IDEMPOTENCY_HASH_FAILED(INTERNAL_SERVER_ERROR, 4336, "멱등 요청 해시 생성에 실패했습니다."),
 
     // 진행률 관련 에러 (4340 ~ 4350)
     VIDEO_INVALID_STATUS_FOR_PROGRESS_UPDATE(BAD_REQUEST, 4340, "진행률을 업데이트할 수 없는 상태입니다."),
