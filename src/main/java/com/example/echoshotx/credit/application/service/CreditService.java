@@ -18,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CreditService {
 
+    private static final String VIDEO_PROCESSING_DEDUCTION_KEY_PREFIX = "VIDEO_PROCESSING:";
+
     private final MemberAdaptor memberAdaptor;
     private final CreditHistoryRepository creditHistoryRepository;
 
@@ -35,7 +37,13 @@ public class CreditService {
         member.useCredits(requiredCredits);
 
         // 사용 내역 기록
-        CreditHistory creditHistory = CreditHistory.createUsage(member.getId(), video.getId(), requiredCredits, processingType);
+        String deductionKey = VIDEO_PROCESSING_DEDUCTION_KEY_PREFIX + video.getId();
+        CreditHistory creditHistory = CreditHistory.createUsage(
+                member.getId(),
+                video.getId(),
+                requiredCredits,
+                processingType,
+                deductionKey);
         return creditHistoryRepository.save(creditHistory);
     }
 

@@ -16,6 +16,9 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(
     name = "credit_history",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_credit_history_deduction_key", columnNames = "deduction_key")
+    },
     indexes = {
         @Index(name = "idx_credit_history_member_id", columnList = "member_id"),
         @Index(name = "idx_credit_history_created_date", columnList = "created_date"),
@@ -48,13 +51,17 @@ public class CreditHistory extends BaseTimeEntity {
     @Column(length = 500)
     private String description;
 
+    @Column(name = "deduction_key", length = 120)
+    private String deductionKey;
+
     // business
     
     /**
      * 크레딧 사용 내역 생성
      */
-    public static CreditHistory createUsage(Long memberId, Long videoId, 
-                                          Integer amount, ProcessingType processingType) {
+    public static CreditHistory createUsage(Long memberId, Long videoId,
+                                          Integer amount, ProcessingType processingType,
+                                          String deductionKey) {
         String description = String.format("%s 영상 처리", processingType.getDescription());
         
         return CreditHistory.builder()
@@ -64,6 +71,7 @@ public class CreditHistory extends BaseTimeEntity {
                 .videoId(videoId)
                 .processingType(processingType)
                 .description(description)
+                .deductionKey(deductionKey)
                 .build();
     }
 
