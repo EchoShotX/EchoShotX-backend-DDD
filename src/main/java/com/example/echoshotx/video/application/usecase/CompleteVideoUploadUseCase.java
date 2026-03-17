@@ -45,6 +45,7 @@ public class CompleteVideoUploadUseCase {
 
     private static final Duration REDIS_LOCK_TTL = Duration.ofSeconds(20);
     private static final String REDIS_LOCK_KEY_PREFIX = "video:complete:";
+    private static final String JOB_MESSAGE_ID_PREFIX = "job:";
 
     private final VideoAdaptor videoAdaptor;
     private final VideoService videoService;
@@ -66,15 +67,12 @@ public class CompleteVideoUploadUseCase {
             String idempotencyKey) {
 
         String normalizedKey = normalizeIdempotencyKey(idempotencyKey);
-        String requestHash = null;
-        if (normalizedKey != null) {
-            requestHash = idempotencyService.createRequestHash(videoId, request);
-            Optional<CompleteUploadResponse> cachedResponse =
-                    idempotencyService.findSuccessResponse(
-                            member.getId(), videoId, normalizedKey, requestHash);
-            if (cachedResponse.isPresent()) {
-                return cachedResponse.get();
-            }
+        String requestHash = createRequestHashIfNeeded(normalizedKey, videoId, request);
+
+        Optional<CompleteUploadResponse> cachedResponse =
+                findCachedResponse(normalizedKey, member.getId(), videoId, requestHash);
+        if (cachedResponse.isPresent()) {
+            return cachedResponse.get();
         }
 
         if (normalizedKey == null) {
@@ -83,18 +81,11 @@ public class CompleteVideoUploadUseCase {
 
         String lockKey = REDIS_LOCK_KEY_PREFIX + videoId;
         String lockToken = UUID.randomUUID().toString();
-        boolean acquired = false;
-
-        try {
-            acquired = redisLockService.tryLock(lockKey, lockToken, REDIS_LOCK_TTL);
-        } catch (RuntimeException e) {
-            log.warn("Redis lock acquire failed. fallback to DB lock. key={}", lockKey, e);
-        }
+        boolean acquired = tryAcquireRedisLock(lockKey, lockToken);
 
         if (!acquired) {
             Optional<CompleteUploadResponse> retryCachedResponse =
-                    idempotencyService.findSuccessResponse(
-                            member.getId(), videoId, normalizedKey, requestHash);
+                    findCachedResponse(normalizedKey, member.getId(), videoId, requestHash);
             if (retryCachedResponse.isPresent()) {
                 return retryCachedResponse.get();
             }
@@ -104,13 +95,7 @@ public class CompleteVideoUploadUseCase {
         try {
             return processCompleteUpload(videoId, request, member, normalizedKey, requestHash);
         } finally {
-            if (acquired) {
-                try {
-                    redisLockService.unlock(lockKey, lockToken);
-                } catch (RuntimeException e) {
-                    log.warn("Redis unlock failed. key={}", lockKey, e);
-                }
-            }
+            releaseRedisLockIfNeeded(acquired, lockKey, lockToken);
         }
     }
 
@@ -121,43 +106,38 @@ public class CompleteVideoUploadUseCase {
             String normalizedKey,
             String requestHash) {
 
-        // 1. 비디오 조회 및 권한 검증
         Video video = videoAdaptor.queryByIdWithLock(videoId);
         video.validateMember(member);
 
-        // 2. 상태 검증
         if (video.getStatus() != VideoStatus.PENDING_UPLOAD) {
-            if (normalizedKey == null) {
-                throw new VideoHandler(VideoErrorStatus.VIDEO_ALREADY_PROCESSED);
-            }
-
-            CompleteUploadResponse response = CompleteUploadResponse.from(video);
-            idempotencyService.saveSuccessResponse(
-                    member.getId(), videoId, normalizedKey, requestHash, response);
-            return response;
+            return handleAlreadyProcessedVideo(video, member.getId(), videoId, normalizedKey, requestHash);
         }
 
         VideoMetadata metadata = createVideoMetadata(request);
-        // 3. 업로드 완료 처리
         video = videoService.completeUpload(video, metadata);
-
-        // 4. 크레딧 차감
         creditService.useCreditsForVideoProcessing(member, video, video.getProcessingType());
-
-        // 5. SQS에 메시지 전송
         String sqsMessageId = sendToProcessingQueue(member, video);
         log.info("Video sent to processing queue: videoId={}, sqsMessageId={}", videoId, sqsMessageId);
-
-        // 6. 처리 대기열에 추가 및 알림 발행 (UPLOAD_COMPLETED → QUEUED)
         video = videoService.enqueueForProcessing(video, sqsMessageId);
 
         CompleteUploadResponse response = CompleteUploadResponse.from(video);
+        cacheSuccessResponseIfNeeded(member.getId(), videoId, normalizedKey, requestHash, response);
 
-        if (normalizedKey != null) {
-            idempotencyService.saveSuccessResponse(
-                    member.getId(), videoId, normalizedKey, requestHash, response);
+        return response;
+    }
+
+    private CompleteUploadResponse handleAlreadyProcessedVideo(
+            Video video,
+            Long memberId,
+            Long videoId,
+            String normalizedKey,
+            String requestHash) {
+        if (normalizedKey == null) {
+            throw new VideoHandler(VideoErrorStatus.VIDEO_ALREADY_PROCESSED);
         }
 
+        CompleteUploadResponse response = CompleteUploadResponse.from(video);
+        cacheSuccessResponseIfNeeded(memberId, videoId, normalizedKey, requestHash, response);
         return response;
     }
 
@@ -169,7 +149,62 @@ public class CompleteVideoUploadUseCase {
                         video.getOriginalFile().getS3Key(),
                         video.getProcessingType());
         jobOutboxService.enqueueJobCreated(job, member.getId());
-        return "job:" + job.getId();
+        return JOB_MESSAGE_ID_PREFIX + job.getId();
+    }
+
+    private String createRequestHashIfNeeded(
+            String normalizedKey, Long videoId, CompleteUploadRequest request) {
+        if (normalizedKey == null) {
+            return null;
+        }
+
+        return idempotencyService.createRequestHash(videoId, request);
+    }
+
+    private Optional<CompleteUploadResponse> findCachedResponse(
+            String normalizedKey,
+            Long memberId,
+            Long videoId,
+            String requestHash) {
+        if (normalizedKey == null) {
+            return Optional.empty();
+        }
+
+        return idempotencyService.findSuccessResponse(memberId, videoId, normalizedKey, requestHash);
+    }
+
+    private boolean tryAcquireRedisLock(String lockKey, String lockToken) {
+        try {
+            return redisLockService.tryLock(lockKey, lockToken, REDIS_LOCK_TTL);
+        } catch (RuntimeException e) {
+            log.warn("Redis lock acquire failed. fallback to DB lock. key={}", lockKey, e);
+            return false;
+        }
+    }
+
+    private void releaseRedisLockIfNeeded(boolean acquired, String lockKey, String lockToken) {
+        if (!acquired) {
+            return;
+        }
+
+        try {
+            redisLockService.unlock(lockKey, lockToken);
+        } catch (RuntimeException e) {
+            log.warn("Redis unlock failed. key={}", lockKey, e);
+        }
+    }
+
+    private void cacheSuccessResponseIfNeeded(
+            Long memberId,
+            Long videoId,
+            String normalizedKey,
+            String requestHash,
+            CompleteUploadResponse response) {
+        if (normalizedKey == null) {
+            return;
+        }
+
+        idempotencyService.saveSuccessResponse(memberId, videoId, normalizedKey, requestHash, response);
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {
