@@ -34,7 +34,7 @@ public class ProcessingCompletedWebhookUseCase {
 
     public void execute(WebhookProcessingCompletedRequest request) {
         // 1. 비디오 조회
-        Video video = videoAdaptor.queryById(request.getVideoId());
+        Video video = videoAdaptor.queryByIdWithLock(request.getVideoId());
         log.info(
                 "Processing completed webhook received: videoId={}, aiJobId={}",
                 request.getVideoId(),

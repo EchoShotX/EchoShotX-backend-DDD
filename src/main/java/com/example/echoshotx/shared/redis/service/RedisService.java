@@ -80,4 +80,17 @@ public class RedisService {
         String key = CLIENT_TYPE_PREFIX + state;
         return values.get(key);
     }
+
+    public boolean setIfAbsent(String key, String value, Duration ttl) {
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(key, value, ttl);
+        return Boolean.TRUE.equals(acquired);
+    }
+
+    public String getValue(String key) {
+        return redisTemplate.opsForValue().get(key);
+    }
+
+    public void setValue(String key, String value, Duration ttl) {
+        redisTemplate.opsForValue().set(key, value, ttl);
+    }
 }

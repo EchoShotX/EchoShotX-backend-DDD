@@ -30,4 +30,9 @@ public class JobService {
         job.markFailed();
     }
 
+    public void markPublished(Long jobId) {
+        Job job = jobAdaptor.queryById(jobId);
+        job.markPublished();
+    }
+
 }

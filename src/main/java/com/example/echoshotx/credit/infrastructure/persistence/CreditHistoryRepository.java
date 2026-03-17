@@ -5,6 +5,7 @@ import com.example.echoshotx.credit.domain.entity.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CreditHistoryRepository extends JpaRepository<CreditHistory, Long> {
     
@@ -18,5 +19,7 @@ public interface CreditHistoryRepository extends JpaRepository<CreditHistory, Lo
      */
     List<CreditHistory> findByMemberIdAndTransactionTypeOrderByCreatedDateDesc(Long memberId,
                                                                                TransactionType transactionType);
+
+    Optional<CreditHistory> findByDeductionKey(String deductionKey);
 
 }

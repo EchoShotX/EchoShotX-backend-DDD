@@ -9,6 +9,7 @@ import com.example.echoshotx.video.domain.entity.ProcessingType;
 import com.example.echoshotx.video.domain.entity.Video;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreditService {
 
     private static final String VIDEO_PROCESSING_DEDUCTION_KEY_PREFIX = "VIDEO_PROCESSING:";
+    private static final String VIDEO_PROCESSING_REFUND_KEY_PREFIX = "VIDEO_PROCESSING_REFUND:";
 
     private final MemberAdaptor memberAdaptor;
     private final CreditHistoryRepository creditHistoryRepository;
@@ -33,25 +35,31 @@ public class CreditService {
                 video.getOriginalMetadata().getDurationSeconds()
         );
         
-        // 회원 크레딧 차감
-        member.useCredits(requiredCredits);
+        Member lockedMember = memberAdaptor.queryByIdWithLock(member.getId());
+        lockedMember.useCredits(requiredCredits);
 
         // 사용 내역 기록
         String deductionKey = VIDEO_PROCESSING_DEDUCTION_KEY_PREFIX + video.getId();
         CreditHistory creditHistory = CreditHistory.createUsage(
-                member.getId(),
+                lockedMember.getId(),
                 video.getId(),
                 requiredCredits,
                 processingType,
                 deductionKey);
-        return creditHistoryRepository.save(creditHistory);
+        try {
+            return creditHistoryRepository.save(creditHistory);
+        } catch (DataIntegrityViolationException e) {
+            log.info("Credit usage already recorded. deductionKey={}", deductionKey);
+            return creditHistoryRepository.findByDeductionKey(deductionKey)
+                    .orElseThrow(() -> e);
+        }
     }
 
     /**
      * 크레딧 충전
      */
     public CreditHistory addCredits(Long memberId, Integer amount, String description) {
-        Member member = memberAdaptor.queryById(memberId);
+        Member member = memberAdaptor.queryByIdWithLock(memberId);
         
         // 회원 크레딧 충전
         member.addCredits(amount);
@@ -73,7 +81,7 @@ public class CreditService {
      * 크레딧 환불
      */
     public CreditHistory refundCredits(Long memberId, Long videoId, Integer amount, String reason) {
-        Member member = memberAdaptor.queryById(memberId);
+        Member member = memberAdaptor.queryByIdWithLock(memberId);
         
         // 회원 크레딧 환불
         member.addCredits(amount);
@@ -83,11 +91,36 @@ public class CreditService {
         return creditHistoryRepository.save(creditHistory);
     }
 
+    public CreditHistory refundCreditsForVideoProcessingFailure(
+            Long memberId,
+            Long videoId,
+            Integer amount,
+            String reason) {
+        Member member = memberAdaptor.queryByIdWithLock(memberId);
+        String refundKey = VIDEO_PROCESSING_REFUND_KEY_PREFIX + videoId;
+
+        CreditHistory existing = creditHistoryRepository.findByDeductionKey(refundKey).orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+
+        member.addCredits(amount);
+        CreditHistory creditHistory = CreditHistory.createRefund(memberId, videoId, amount, reason, refundKey);
+
+        try {
+            return creditHistoryRepository.save(creditHistory);
+        } catch (DataIntegrityViolationException e) {
+            log.info("Credit refund already recorded. refundKey={}", refundKey);
+            return creditHistoryRepository.findByDeductionKey(refundKey)
+                    .orElseThrow(() -> e);
+        }
+    }
+
     /**
      * AI 서버 연동용 크레딧 차감
      */
     public CreditHistory deductCredits(Long memberId, Integer amount, String description) {
-        Member member = memberAdaptor.queryById(memberId);
+        Member member = memberAdaptor.queryByIdWithLock(memberId);
         
         // 회원 크레딧 차감
         member.useCredits(amount);
@@ -101,7 +134,7 @@ public class CreditService {
      * AI 서버 연동용 크레딧 환불
      */
     public CreditHistory refundCredits(Long memberId, Integer amount, String reason) {
-        Member member = memberAdaptor.queryById(memberId);
+        Member member = memberAdaptor.queryByIdWithLock(memberId);
         
         // 회원 크레딧 환불
         member.addCredits(amount);

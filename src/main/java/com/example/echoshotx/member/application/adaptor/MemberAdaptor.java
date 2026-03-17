@@ -23,6 +23,13 @@ public class MemberAdaptor {
         );
     }
 
+    @Transactional
+    public Member queryByIdWithLock(Long memberId) {
+        return repository.findByIdWithLock(memberId).orElseThrow(
+                () -> new MemberHandler(MemberErrorStatus.MEMBER_NOT_FOUND)
+        );
+    }
+
     public Member queryByUsername(String username) {
         return repository.findByUsername(username).orElseThrow(
                 () -> new MemberHandler(MemberErrorStatus.MEMBER_NOT_FOUND)

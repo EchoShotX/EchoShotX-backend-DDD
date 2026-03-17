@@ -5,11 +5,12 @@ spring:
   datasource:
 
     hikari:
-      maximum-pool-size: 30
-      minimum-idle: 10
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      maximum-pool-size: 8
+      minimum-idle: 2
+      connection-timeout: 1500
+      validation-timeout: 1000
+      idle-timeout: 120000
+      max-lifetime: 900000
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
@@ -19,6 +20,7 @@ spring:
       host: ${SPRING_DATA_REDIS_HOST}
       port: ${SPRING_DATA_REDIS_PORT}
       password: ${SPRING_DATA_REDIS_PASSWORD:}
+      timeout: 100ms
 
 
   jpa:
@@ -82,6 +84,12 @@ auth:
 # 서버 포트 설정 (기본 포트 변경 시)
 server:
   port: 8080
+  tomcat:
+    threads:
+      max: 32
+      min-spare: 4
+    accept-count: 100
+    connection-timeout: 3s
 #  servlet:
 #    context-path: /api/v1 # controller 접두사
 
@@ -97,6 +105,9 @@ app:
     secret: ${APP_JWT_SECRET}
   cors:
     front-path: ${APP_CORS_FRONT_PATH} #cors front url
+  webhook:
+    secret: ${APP_WEBHOOK_SECRET:}
+    allowed-skew-seconds: ${APP_WEBHOOK_ALLOWED_SKEW_SECONDS:300}
 
 #cloud
 cloud:

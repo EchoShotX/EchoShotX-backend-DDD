@@ -1,7 +1,7 @@
 package com.example.echoshotx.video.application.usecase;
 
 import com.example.echoshotx.credit.application.service.CreditService;
-import com.example.echoshotx.job.application.event.JobCreatedEvent;
+import com.example.echoshotx.job.application.service.JobOutboxService;
 import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.domain.entity.Job;
 import com.example.echoshotx.member.domain.entity.Member;
@@ -24,7 +24,6 @@ import java.util.UUID;
 import com.example.echoshotx.video.presentation.exception.VideoHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
@@ -51,9 +50,9 @@ public class CompleteVideoUploadUseCase {
     private final VideoService videoService;
     private final CreditService creditService;
     private final JobService jobService;
+    private final JobOutboxService jobOutboxService;
     private final VideoUploadIdempotencyService idempotencyService;
     private final RedisLockService redisLockService;
-    private final ApplicationEventPublisher eventPublisher;
 
     public CompleteUploadResponse execute(
             Long videoId, CompleteUploadRequest request, Member member) {
@@ -163,17 +162,14 @@ public class CompleteVideoUploadUseCase {
     }
 
     private String sendToProcessingQueue(Member member, Video video) {
-		Job job = jobService.createJob(member, video.getId(), video.getOriginalFile().getS3Key(), video.getProcessingType());
-		JobCreatedEvent event = JobCreatedEvent.builder()
-				.jobId(job.getId())
-				.videoId(job.getVideoId())
-				.processingType(job.getProcessingType())
-				.memberId(member.getId())
-				.s3Key(job.getS3Key())
-				.build();
-		eventPublisher.publishEvent(event);
-        // Mock implementation
-        return UUID.randomUUID().toString();
+        Job job =
+                jobService.createJob(
+                        member,
+                        video.getId(),
+                        video.getOriginalFile().getS3Key(),
+                        video.getProcessingType());
+        jobOutboxService.enqueueJobCreated(job, member.getId());
+        return "job:" + job.getId();
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {
