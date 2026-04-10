@@ -80,8 +80,8 @@ public class JobPublisher {
         // FIFO면 groupId 필수
         if (awsProps.getSqs().isFifo()) {
             builder.messageGroupId(awsProps.getSqs().getMessageGroupId());
-            // 필요시 deduplicationId도 넣을 수 있음
-            // builder.messageDeduplicationId(UUID.randomUUID().toString());
+            // jobId 기준 deduplicationId: 폴러 재시도/다중 인스턴스에서 동일 job 중복 발송을 SQS 레벨에서 차단
+            builder.messageDeduplicationId(String.valueOf(message.getJobId()));
         }
 
         // 선택: message attribute에 타입 정보 넣기

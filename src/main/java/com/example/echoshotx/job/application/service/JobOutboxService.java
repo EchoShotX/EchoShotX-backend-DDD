@@ -8,12 +8,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class JobOutboxService {
+
+    static final int MAX_RETRIES = 10;
 
     private final JobOutboxEventRepository repository;
     private final ObjectMapper objectMapper;
@@ -29,6 +33,29 @@ public class JobOutboxService {
                 .build();
 
         repository.save(JobOutboxEvent.pending(job.getId(), serialize(message), LocalDateTime.now()));
+    }
+
+    @Transactional
+    public void markSent(Long eventId) {
+        repository.findById(eventId).ifPresent(event -> event.markSent(LocalDateTime.now()));
+    }
+
+    /**
+     * 발송 실패 처리. 재시도 횟수가 MAX_RETRIES 이상이면 FAILED로 확정하고 true 반환.
+     * 그 이하면 exponential backoff 후 재시도 예약하고 false 반환.
+     */
+    @Transactional
+    public boolean markRetryOrFailed(Long eventId, RuntimeException error) {
+        return repository.findById(eventId).map(event -> {
+            if (event.getRetryCount() >= MAX_RETRIES) {
+                event.markFailed(LocalDateTime.now(), error);
+                log.error("Outbox event permanently failed. eventId={}", eventId, error);
+                return true;
+            }
+            event.markRetry(LocalDateTime.now(), error);
+            log.warn("Outbox event will retry. eventId={}, retryCount={}", eventId, event.getRetryCount(), error);
+            return false;
+        }).orElse(false);
     }
 
     public JobMessage deserialize(String payload) {

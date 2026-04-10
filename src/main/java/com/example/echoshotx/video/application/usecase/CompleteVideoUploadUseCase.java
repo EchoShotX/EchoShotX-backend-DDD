@@ -1,7 +1,7 @@
 package com.example.echoshotx.video.application.usecase;
 
 import com.example.echoshotx.credit.application.service.CreditService;
-import com.example.echoshotx.job.application.service.JobOutboxService;
+
 import com.example.echoshotx.job.application.service.JobService;
 import com.example.echoshotx.job.domain.entity.Job;
 import com.example.echoshotx.member.domain.entity.Member;
