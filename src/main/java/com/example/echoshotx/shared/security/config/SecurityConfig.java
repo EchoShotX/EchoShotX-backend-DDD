@@ -7,6 +7,7 @@ import com.example.echoshotx.shared.security.exception.JwtAccessDeniedHandler;
 import com.example.echoshotx.shared.security.exception.JwtAuthenticationEntryPoint;
 import com.example.echoshotx.shared.security.filter.JwtAuthenticationFilter;
 import com.example.echoshotx.shared.security.filter.JwtExceptionFilter;
+import com.example.echoshotx.shared.security.filter.WebhookSignatureFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtExceptionFilter jwtExceptionFilter;
+    private final WebhookSignatureFilter webhookSignatureFilter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
@@ -93,7 +95,9 @@ public class SecurityConfig {
                             .requestMatchers(permitAllRequest()).permitAll()        //비인증 api 허용 처리
                             .requestMatchers(authRelatedEndpoints()).permitAll()
                             .requestMatchers(additionalSwaggerRequests()).permitAll()
-                            .anyRequest().permitAll();      //지정하지 않은 url의 경우 인증 처리
+                            .requestMatchers(HttpMethod.POST, "/videos/webhook/**").permitAll()
+                            .requestMatchers(HttpMethod.POST, "/api/videos/webhook/**").permitAll()
+                            .anyRequest().authenticated();
                 });
     }
 
@@ -138,6 +142,7 @@ public class SecurityConfig {
 
     private void addFilter(HttpSecurity httpSecurity) {
         httpSecurity
+                .addFilterBefore(webhookSignatureFilter, JwtAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtExceptionFilter, JwtAuthenticationFilter.class);
     }

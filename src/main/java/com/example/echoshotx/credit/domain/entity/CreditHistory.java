@@ -108,6 +108,15 @@ public class CreditHistory extends BaseTimeEntity {
      * 크레딧 환불 내역 생성
      */
     public static CreditHistory createRefund(Long memberId, Long videoId, Integer amount, String reason) {
+        return createRefund(memberId, videoId, amount, reason, null);
+    }
+
+    public static CreditHistory createRefund(
+            Long memberId,
+            Long videoId,
+            Integer amount,
+            String reason,
+            String refundKey) {
         String description = String.format("크레딧 환불: %s", reason);
         
         return CreditHistory.builder()
@@ -117,6 +126,7 @@ public class CreditHistory extends BaseTimeEntity {
                 .videoId(videoId)
                 .processingType(null)
                 .description(description)
+                .deductionKey(refundKey)
                 .build();
     }
 

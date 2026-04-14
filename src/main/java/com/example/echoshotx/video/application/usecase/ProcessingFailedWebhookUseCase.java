@@ -35,7 +35,7 @@ public class ProcessingFailedWebhookUseCase {
 
     public void execute(WebhookProcessingFailedRequest request) {
         // 1. 비디오 조회
-        Video video = videoAdaptor.queryById(request.getVideoId());
+        Video video = videoAdaptor.queryByIdWithLock(request.getVideoId());
         log.warn(
                 "Processing failed webhook received: videoId={}, aiJobId={}, error={}",
                 request.getVideoId(),
@@ -63,7 +63,7 @@ public class ProcessingFailedWebhookUseCase {
 
         // 4. 크레딧 환불
         if (usedCredits > 0) {
-            creditService.refundCredits(
+            creditService.refundCreditsForVideoProcessingFailure(
                     video.getMemberId(), video.getId(), usedCredits, "영상 처리 실패로 인한 크레딧 환불");
             log.info("Credits refunded: videoId={}, amount={}", request.getVideoId(), usedCredits);
         }

@@ -33,12 +33,15 @@ public final class CustomAuthenticationPrincipalArgumentResolver implements Hand
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        Object principal = authentication.getPrincipal();
-        CurrentMember annotation = findMethodAnnotation(CurrentMember.class, parameter);
-        if (principal == "anonymousUser") {
-            throw new RuntimeException();
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Authentication is required");
         }
-        findMethodAnnotation(CurrentMember.class, parameter);
+
+        Object principal = authentication.getPrincipal();
+        if ("anonymousUser".equals(principal)) {
+            throw new RuntimeException("Anonymous access is not allowed");
+        }
+
         return memberAdaptor.queryById(Long.parseLong(authentication.getName()));
     }
 
